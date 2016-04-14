@@ -1218,8 +1218,6 @@ Reparar problema de _fstab_ modificando _grub_:
 * El paquete de kernel es especial, ya que permite tener varias versiones del paquete a la vez:
 > \# yum list kernel
 
-TO-DO: Revisar ortografía desde aquí para abajo
-
 ### Histórico de paquetes
 
 * Histórico de transacciones con yum:
@@ -1239,7 +1237,7 @@ TO-DO: Revisar ortografía desde aquí para abajo
 ### Grupos de paquetes
 
 * Obtener información de un grupo:
-> \# yum group info "Virtualization PLatform"
+> \# yum group info "Virtualization Platform"
 
 * Los paquetes vienen agrupados en grupos. Facilitando así instalaciones:
 > \# yum group list
@@ -1274,7 +1272,7 @@ TO-DO: Revisar ortografía desde aquí para abajo
 
 # Capítulo 10: Configuración de red (1.262)
 
-* EN _RHEL_ _ifconfig_, netstat route están como obsoletos desde _RHEL 6_, en _RHEL 7_ están disponibles para instalar, pero no están instalados por defecto en el sistema.
+* EN _RHEL_ _ifconfig_, _netstat_ y _route_ están como obsoletos desde _RHEL 6_, en _RHEL 7_ están disponibles para instalar, pero no están instalados por defecto en el sistema.
 
 * En _RHEL 6_ se usaba _network_ como servicio de gestión de red, en _RHEL 7_ se usa _NetworkManager_, el cual está integrado con _systemd_. Por lo que es buena práctica deshabilitar y enmascara _network_.
 
@@ -1295,18 +1293,18 @@ TO-DO: Revisar ortografía desde aquí para abajo
 * Ver si una conexión tiene link y sus estadísticas:
 > \# ip -s link show eth0
 
-* Sustituto de traceroute:
+* Sustituto de _traceroute_:
 > \# tracepath access.redhat.com
 
 * _tracepath_ + _ping_:
 > \# mtr access.redhat.com
 
-* _netstat_ es sustituído por _ss_ (1.263):
+* _netstat_ es sustituido por _ss_ (1.263):
 > \# ss - ta (conexiones a la escucha)
 
 ## Configuración de hostnames
 
-* Cambiar hostname de la máquina:
+* Cambiar _hostname_ de la máquina:
 > \# hostnamectl set-hostname server0.example.com
 	* Se crear el archivo _/etc/hostname_
 
@@ -1324,10 +1322,10 @@ TO-DO: Revisar ortografía desde aquí para abajo
 * Herramienta modo texto de gestión de red de _NetworkManager_:
 > \# nmcli
 
-* Interfaz curses de NetworkManager:
+* Interfaz curses de _NetworkManager_:
 > \# mtui
 
-* Interfaz gui de NetworkManager:
+* Interfaz gui de _NetworkManager_:
 > \# nm-connection-editor
 
 * Mostrar conexiones:
@@ -1349,7 +1347,7 @@ TO-DO: Revisar ortografía desde aquí para abajo
 	
 * No hacer "cp ifcfg-eth0 ifcfg-eth0.copia" en el dir "network-scripts" ya que _NetworkManager_ lo trataría como si fuese una nueva interfaz. Se podría hacer si el archivo no empieza por _ifcfg*_.
 
-* Tras editar este archivo habría que recargar la configuración en NetworkManager:
+* Tras editar este archivo habría que recargar la configuración en _NetworkManager_:
 
 	> \# nmcli con reload
 	> \# nmcli con down "System eth0"
@@ -1408,9 +1406,9 @@ TO-DO: Revisar ortografía desde aquí para abajo
 
     * En ella se especifica en dónde se guardarán los logs.
  
-	* _.*_ son todos los niveles de log excepto el debug.
+	* _.*_ son todos los niveles de log excepto el _debug_.
 	
-	* Todo _info_ o superior excpeto servicio _mail_ van a _messages_:
+	* Todo _info_ o superior excepto servicio _mail_ van a _messages_:
 		* *.info;mail.none; /var/log/messages
 
 	* Escritura asíncrona, el "-" antes de la ruta:
@@ -1520,7 +1518,7 @@ TO-DO: Revisar ortografía desde aquí para abajo
 
 * Verificar el servidor NTP usado para sincronización (1.306):
 > $ chronyc sources -v
-	* Stratum: Númeor de saltos de separación que hay hasta un reloj atómico.
+	* _Stratum_: Número de saltos de separación que hay hasta un reloj atómico.
 
 * En http://www.pool.ntp.org ha una lista de servidores _NTP_. _systemd_ obtiene de ahí los servidores para cada zona.
 
@@ -1571,7 +1569,7 @@ TO-DO: Revisar ortografía desde aquí para abajo
 	* **lv** (logical volume):
     	* Se crean sobre un volume group. Cada lv es lo que se podría formatear. (como una partición virtual).
 
-* Una vez creado el volumenó lgico (_lv_) se monta desde _/dev/vgname/lvname_.
+* Una vez creado el volumen lógico (_lv_) se monta desde _/dev/vgname/lvname_.
 
 * _LVM_ aporta modificaciones en caliente:
     * Añadir un _pv_.
@@ -1602,7 +1600,7 @@ A continuación se detalla todo el proceso de implementación de un almacenamien
 
 #### Particionado del disco
 
-* Crear dos particiones con fdisk:
+* Crear dos particiones con _fdisk_:
 > \# fdisk /dev/vdb
     * n -> p -> 1 -> default -> +4GB
     * n -> p -> 2 -> default -> +3GB
@@ -1678,7 +1676,7 @@ A continuación se detalla todo el proceso de implementación de un almacenamien
 
 #### Crear logical volume
 
-* Crear logical volume en el volume group:
+* Crear _logical volume_ en el volume group:
 > \# lvcreate -L 1G -n lv_datos vg_mivgroup
 	* -L-> tamaño
 	* -l-> número de extents
@@ -1688,7 +1686,7 @@ A continuación se detalla todo el proceso de implementación de un almacenamien
 
 	>> lv_datos vg_mivgroup 1G
 
-* Obtener información detllada del _lv_ creado:
+* Obtener información detallada del _lv_ creado:
 > \# lvdisplay vg_mivgroup/lv_datos
 
 	>> 1GB, available
@@ -1722,7 +1720,7 @@ A continuación se detalla todo el proceso de implementación de un almacenamien
 
 #### Comprobación funcionamiento correcto
 
-* Obtenter información del espacio en disco libre:
+* Obtener información del espacio en disco libre:
 > \# df -h
 	> /dev/mapper/vg_mivgroup-lv_datos ... /datos
 
@@ -1742,7 +1740,7 @@ A continuación se detalla todo el proceso de implementación de un almacenamien
 
 ## Snapshots LVM
 
-* Los snapshots son un tipo especial de _lv_:
+* Los _snapshots_ son un tipo especial de _lv_:
 
 * Al hacer un _snapshot_ se pondrían los datos en solo lectura, al escribir nuevos datos estos se escribirían en otra zona que está como lectura+escritura.
 
