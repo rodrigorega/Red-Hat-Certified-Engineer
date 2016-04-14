@@ -1346,10 +1346,412 @@ TO-DO: Revisar ortografía desde aquí para abajo
 * Los archivos de configuración de red están en:
 
 > /etc/sysconfig/network-scripts/ifcfg-*
-	* No hacer "cp ifcfg-eth0 ifcfg-eth0.copia" en el dir "network-scripts" ya que _NetworkManager_ lo trataría como si fuese una nueva interfaz. Se podría hacer si el archivo no empieza por _ifcfg*_.
+	
+* No hacer "cp ifcfg-eth0 ifcfg-eth0.copia" en el dir "network-scripts" ya que _NetworkManager_ lo trataría como si fuese una nueva interfaz. Se podría hacer si el archivo no empieza por _ifcfg*_.
 
 * Tras editar este archivo habría que recargar la configuración en NetworkManager:
 
 	> \# nmcli con reload
 	> \# nmcli con down "System eth0"
 	> \# nmcli con up "System eth0"
+
+<center>2016-04-13 (miércoles)</center>
+
+# Capítulo 11: Logs de sistema y sincronización de tiempo (1.287)
+
+## Logs de sistema
+
+* _systemd_ tiene su propio sistema de logs, _journald_, el cual coexiste con el clásico _rsyslog_.
+
+* Archivos de logs mantenidos por _rsyslog_:
+    * _/var/log/messages_: La mayoría de los mensajes de sistema.
+    * _/var/log/secure_: Logs de seguridad y autenticación.
+    * _/var/log/maillog_: Logs relacionados con el servidor de correo.
+    * _/var/log/cron_; Logs de tareas ejecutadas periódicamente.
+    * _/var/log/boot.log_: Logs de inicio de sistema.
+
+* Hay 8 niveles de tipos de mensajes de log. Siendo 0 el más grave y 7 el menos:
+
+    0. emerg: El sistema es totalmente inusable. Lo que se conoce como _kernel panic_.
+    1. alert: Requiere acción inmediata por parte del administrador.
+    2. critic: Algo importante ha ocurrido. Afecta al servicio.
+    3. error: Error no crítico. No afecta al servicio.
+    4. warning: Algo pasa pero no interrumpe el servicio.
+    5. notice: Evento normal pero significante.
+    6. info: Notificación estándar.
+    7. debug: Mensajes de depuración.
+    
+### rsyslog
+
+* Obtener estado del servicio _rsyslog_:
+> \# systemctl status rsyslog.service
+
+* Archivo de configuración en: _/etc/rsyslog.conf_
+
+* Documentación archivo de configuración:
+> $ man rsyslog.conf
+
+#### /etc/rsyslog.conf (1.292)
+
+* Documentación en:
+
+    * _man rsyslog.conf_
+    * _/usr/share/doc/rsyslog-*/manual.html
+
+* Sección de módulos:
+
+    * En ella se configura la recepción de logs desde otras máquinas.
+
+	* Se pueden recibir vía _UDP_ (no se podría cifrar) ío va _TCP_ (es posible hacerlo de manera cifrada).
+
+* Sección de reglas:
+
+    * En ella se especifica en dónde se guardarán los logs.
+ 
+	* _.*_ son todos los niveles de log excepto el debug.
+	
+	* Todo _info_ o superior excpeto servicio _mail_ van a _messages_:
+		* *.info;mail.none; /var/log/messages
+
+	* Escritura asíncrona, el "-" antes de la ruta:
+		* mail.* /var/log/cron -/var/log/maillog
+	
+	* Mandar logs de _info_ o superior a otro servidor vía _udp_:
+		* *.info	@server4.example.com
+
+	* Mandar logs de _info_ o superior a otro servidor vía _tcp_:
+		* *.info	@@server4.example.com
+	
+	* Mandar todos los logs _info_ excepto los de _mail_ y _cron_:
+	   * *.info;mail.none;cron.none    /var/log/messages
+
+#### logrotate (1.293)
+
+* No es un servicio, es un binario ejecutado desde _cron_.
+
+* Configuración en _/etc/logrotate_.
+
+* Se puede rotar por fecha o por tamaño.
+
+* Funciona por fichero o directorio.
+
+* Por defecto los logs rotan una vez a la semana.
+
+* Por defecto almacena un mes de logs.
+
+* En _RHEL 7_ los archivos rotados son renombrados con su día de rotación.
+
+* Comando para crear logs manualmente (1.294):
+> \# logger -p cron.err "Error falso del CRON"
+    * Admite auth, authpriv, cron, daemon, kern, lpr, mail, mark, news, security, syslog, user, uucp y local0 a local7. En "man rsyslog.conf" se ve esta lista detalladamente.
+    * _logger_ manda tanto a _rsyslog_ como a _journal_.
+
+### journalctl (1.297)
+
+* Documentación en: 
+
+> $ man systemd-journald
+
+> $ man systemd.journal-fields
+
+* Archivo de configuración: _/etc/systemd/journal.conf_
+
+* Obtener estado del servicio _systemd-journald_:
+> \# systemctl status systemd-journald.service
+
+* Por defecto los logs se almacenan en binario en _/run/log/journal_ y no son persistentes.
+
+* Consultar los logs de _systemd_:
+> \# journalctl
+
+* Mostrar útimas 10 líneas y las más recientes en tiempo real (como _tail -f_):
+> \# jornalctl -f
+
+* Ver mensajes con prioridad _error_:
+> \# journalctl -p err
+
+* Filtrar por fechas (1.298):
+
+> \# jornalctl --since "2016-04-13 9:50:00"
+
+> \# jornalctl --since "2016-04-13 9:50:00" --until "2016-04-13 10:00:00"
+
+* Filtrar por servicio (se debe indicar el ".service"):
+> \# journalctl _SYSTEMD_UNIT=sshd.service
+
+* Obtener más información:
+> \# jounalctl -o verbose
+
+#### journal persistente (1.301)
+
+* Para habilitar la persistencia de logs basta con crear el directorio _/var/log/journal_.
+
+* Por defecto se realiza un rotado mensual.
+
+* El _journal_ no puede crecer más del 10% del sistema de ficheros ni dejar menos de 15% de espacio libre en el mismo. Estos valores son configurables.
+
+* Una vez se tiene _journal_ persistente se obtienen los logs desde el último inicio con:
+> \# jounalctl -b
+
+* Obtener logs de inicios anteriores. Por ejemplo, de hace dos:
+> \# journalctl -b -2
+
+## Sincronización de tiempo (1.304)
+
+* Consulta a servidor _NTP_ y mostrar la hora local:
+> $ rdate hora.roa.es ; date
+
+### Servicio chronyd
+
+* La funcionalidad que antes cubría _NTP_ está dentro de _systemd_ como el servicio _chronyd_.
+    * _NTP_ tiene dos limitaciones. _systemd_ las gestiona mejor ya que las automatiza:
+    	* No sincroniza la hora en el momento, lo va haciendo en saltos pequeños. Para evitar saltos discontinuos. O sea para evitar saltos de tiempo ilógicos.
+    	* Tiene un tope: No sincroniza si la diferencia es mayor de 20 minutos.
+    
+* Archivo configuración de _chronyd_ en _/etc/chrony.conf_.
+
+* Documentación:
+
+> $ man chronyd
+
+> $ man chrony.conf
+
+* _chronyc_ es el cliente del servidor _chronyd_.
+
+* Verificar el servidor NTP usado para sincronización (1.306):
+> $ chronyc sources -v
+	* Stratum: Númeor de saltos de separación que hay hasta un reloj atómico.
+
+* En http://www.pool.ntp.org ha una lista de servidores _NTP_. _systemd_ obtiene de ahí los servidores para cada zona.
+
+* Acrónimos a tener en cuenta:
+    * CEST = Central European Summer time (+2 horas en España).
+    * DST= Displacement Summer Time.
+    * RTC = Real time clock (reloj de hardware).
+    
+
+### Comando timedatectl (1.304)
+
+* Documentación:
+> $ man timedatectl
+
+* Obtener información extendida sobre la hora:
+> $ timedatectl
+
+* Mostrar zonas horarias disponibles:
+> $ timedatectl list-timezones
+
+* Asistente para localizar zona horaria:
+> \# tzselect
+
+* Establecer zona horaria:
+> \# timedatectl set-timezone America/Port-au-Prince
+
+* Configurar hora de forma manual:
+> \# timedatecl set-time 9:00:00
+
+* Habilitar sincronización _NTP_
+> \# timedatectl set-ntp true
+
+# Capítulo 12: LVM (1.316)
+
+* Documentación en:
+> $ man [ lvm | pvcreate | vgcreate | lvcreate ]
+
+
+* En LVM están involucradas 3 capas:
+
+	1. **pv** (phisical volumes):
+        * Disco o partición. Idealmente deberían estar marcadas como LVM (en vez de linux, swap...). Esto se establece al particionar con _fdisk_.
+		* LVM no hace ningún tipo de marca en el disco o partición para gestionarlo como _pv_, añadiría información sobre ello en su base de datos interna.
+
+	* **vg** (volume group):
+    	* Agrupación de volúmenes físicos (discos y/o particiones). Es como si fuera un disco en el que hay que crear las particiones. (como un disco duro virtual)
+
+	* **lv** (logical volume):
+    	* Se crean sobre un volume group. Cada lv es lo que se podría formatear. (como una partición virtual).
+
+* Una vez creado el volumenó lgico (_lv_) se monta desde _/dev/vgname/lvname_.
+
+* _LVM_ aporta modificaciones en caliente:
+    * Añadir un _pv_.
+    * Ampliar _vg_.
+    * Ampliar el _lv_. Es capaz de aumentar el sistema de archivos automáticamente en caso de que sea _xfs_ o _ext4_.
+
+* No es posible reducir un _lv_ con _xfs_ pero sí uno con _ext4_.
+
+* Es recomendado como buena práctica montar _/var/log_ como un _vg_ independiente al resto del sistema.
+
+* Un _vg_ no tiene _UUID_, el sistema de ficheros es el que tiene el _UUID_ (o sea, tras formatear).
+
+* _LVM_ puede hacer _raid_ 0 o 1+0, que gestiona él mismo. Sería por volúmenes lógicos. Aunque es más recomendable hacer _RAID_ por hardware y no con _LVM_.
+    * Si un _vg_ tiene dos discos no lo trata directamente como RAID 0.
+
+* Dentro de un _vg_ solo puede haber una partición.
+
+## Crear disco con LVM (1.316)
+
+### Ejemplo de creación de volumen lógico desde dos particiones
+
+A continuación se detalla todo el proceso de implementación de un almacenamiento LVM. A tener en cuenta:
+
+* Se crearán dos particiones en el disco _/dev/vdb_ (4GB y 3GB).
+* Ambas particiones se usarán como un único _logical volume_ (_lv_).
+* El nombre del _volume group_ será: "vg_mivgroup".
+* El nombre del _logical volume_ será: "lv_datos".
+
+#### Particionado del disco
+
+* Crear dos particiones con fdisk:
+> \# fdisk /dev/vdb
+    * n -> p -> 1 -> default -> +4GB
+    * n -> p -> 2 -> default -> +3GB
+    * t -> 1 -> 8e
+    * t -> 2 -> 8e
+    * w
+    
+* Forzar al _kernel_ a releer la tabla de particiones del disco:
+> \# partprobe /dev/vdb
+
+* Mostrar dispositivos de bloques (veremos las dos particiones creadas):
+> \# lsbk
+
+	>> vdb1
+	
+	>> vdb2
+
+#### Crear phisical volumes
+
+* Mostrar _phisical volumes_ de _LVM_:
+> \# pvs
+
+	>> -nada-
+
+* Crear dos _phisical volumes_ (_pvs_):
+> \# pvcreate /dev/vdb1 /dev/vdb2
+
+* Mostrar _phisical volumes_ de _LVM_:
+> \# pvs
+
+	>> /dev/vdb1
+	
+	>> /dev/vdb2
+
+* Obtener información detallada de los _pvs_;
+> \# pvdisplay /dev/vdb1
+
+#### Crear volume groups
+
+* Listar _vgs_ existentes:
+> \# vgs
+	
+	>> -nada-
+
+* Crear _volume group_ (_vg_) con uno de los _pvs_ ("-s" es tamaño de _extent_, si se omite, el propio _LVM_ lo autogestiona):
+> \# vgcreate -s 1M vg_mivgroup /dev/vdb1
+
+* Listar _vgs_ existentes:
+> \# vgs
+
+	>> vg_mivgroup 1pv 0lvs
+
+* Mostrar _phisical volumes_ de _LVM_:
+> \# pvs
+	/dev/vdb1 vg_mivgroup
+
+* Añadimos el segundo _pv_ al _vg_:
+> \# vgextend vg_mivgroup /dev/vbd2
+
+* Listar _vgs_ existentes:
+> \# vgs
+
+	>> vg_mivgroup 2pv 0lv
+
+* Mostrar detalles del _volume grop_:
+> \# vgdisplay vg_mivgroup
+    * Se comprueba que hay:
+        * 0 lvs
+        * 2 pvs
+        * 7gb vg
+        * phisical extent: 1MB
+        * 7166 phisical extents
+
+#### Crear logical volume
+
+* Crear logical volume en el volume group:
+> \# lvcreate -L 1G -n lv_datos vg_mivgroup
+	* -L-> tamaño
+	* -l-> número de extents
+
+* Listar _logical volumes_ (_lvs_)
+> \# lvs
+
+	>> lv_datos vg_mivgroup 1G
+
+* Obtener información detllada del _lv_ creado:
+> \# lvdisplay vg_mivgroup/lv_datos
+
+	>> 1GB, available
+
+#### Formatear y montar sistema de archivos en el _lv_
+
+* Es posible referirse al _lv_ de dos formas:
+	* _/dev/vg_frenando/lv_datos_
+	* _/dev/mapper/vg_mivgroup-lv_datos_ (el kernel usa internamente esto)
+		
+	* Ambas enlazan a "/dem-0" (device mapper 0). Al hacer reboot esto puede cambiar, puede pasar a ser "dem-1" por ejemplo.
+
+* Crear sistema de archivos en el _lv_;
+> \# mkfs.xfs /dev/vg_feranndo/lv_datos
+
+* Obtener _UUID_ del sistema de archivos:
+> \# blkid /dev/vg_feranndo/lv_datos
+
+	>> UUID=...
+
+* Crear directorio para montar el sistema de archivos:
+> \# mkdir /datos
+
+* Añadir entrada a _/etc/fstab_ para que se monte automáticamente el sistema de archivos recién creado:
+> \# echo "/dev/mapper/vg_mivgroup-lv_datos /datos xfs defaults 1 2" >> /etc/fstab
+
+    > * Podemos usar este tipo de refrencia en vez del _UUID_ ya que no se va a repetir y es más descriptivo.
+
+* Comprobar que la entrada añadida a _fstab_ es correcta:
+> \# mount -a
+
+#### Comprobación funcionamiento correcto
+
+* Obtenter información del espacio en disco libre:
+> \# df -h
+	> /dev/mapper/vg_mivgroup-lv_datos ... /datos
+
+* Crear archivo en el nuevo punto de montaje:
+> \# dd if=/dev/zero of=/datos/amicci.avi bs=1M count=700
+
+* Verificar que es funcional el punto de montaje:
+> \# ll -h /datos/amicci.avi
+
+	> 700MB
+
+## Extender el sistema de ficheros sobre LVM
+
+> \# lvextend/lvresize: lvextend -L +500M -r /dev/vg_mivgroup/lv_datos
+	
+* _-r_ -> Hace _resize_ del sistema de ficheros automáticamente (compatible con xfs, ext3 y ext4).
+
+## Snapshots LVM
+
+* Los snapshots son un tipo especial de _lv_:
+
+* Al hacer un _snapshot_ se pondrían los datos en solo lectura, al escribir nuevos datos estos se escribirían en otra zona que está como lectura+escritura.
+
+* Al revertir el _snapshot_ se eliminaría la parte de lectura+escritura.
+
+## Pool de espacio libre
+
+* Es un tipo especial de _lv_ de tipo _pool.
+
+* Se pueden crear disparadores en un _lv_ para que coja espacio de este _pool_ cuando por ejemplo llegue al 95% de espacio ocupado.
+
+* Todo esto en caliente, el propio _LVM_ se encargaría en aumentar el tamaño en el sistema de ficheros (xfs, ext4...).
