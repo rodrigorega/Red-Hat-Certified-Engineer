@@ -1753,3 +1753,219 @@ A continuación se detalla todo el proceso de implementación de un almacenamien
 * Se pueden crear disparadores en un _lv_ para que coja espacio de este _pool_ cuando por ejemplo llegue al 95% de espacio ocupado.
 
 * Todo esto en caliente, el propio _LVM_ se encargaría en aumentar el tamaño en el sistema de ficheros (xfs, ext4...).
+
+<center>2016-04-14 (jueves)</center>
+
+# Capítulo 13: Tareas programadas (1.341)
+
+## Cron (1.341)
+
+* Configuración en: _/etc/crontab_.
+
+* Editar _cron_ personal (de un usuario). Se comprueba la sintaxis antes de guardar:
+> $ crontab -e
+
+    * SHELL=Todo se ejecutará en _bash_.
+    * MAILTO= Si hay un problema enviaría a este correo. La salida estándar va al correo del usuario que lo esté ejecutando.
+
+* Ejemplo1:
+
+> 45 - 13 - * - * - 5
+
+>> minuto - hora - todos los días - todos los meses - el jueves
+
+* Ejemplo2:
+> */15      9-13,15-18      */15        1-7/3,nov       1-5/2
+    1. Cada 15 minutos (minutos 0, 15, 30 y 45).
+    * Rango de horas (de 9 a 12 y de 15 a 18).
+    * Cada 15 días (días 1, 16 y 31).
+    * Cada 3 meses y en noviembre.
+    * Cada 2 días y el sábado (lunes, miércoles, viernes y sábado).
+
+* Ejemplo3:
+> 0	12	13	*	2	echo "hola"
+>> En teoría sería los martes y 13 a las 12 se ejecutaría, pero no es así: Cuando los campos "día_mes" y  y "dia_semana" están definidos, se ejecuta cuando cualquiera de los dos se cumple. O sea, no se podría establecer que algo se ejecutase todos los martes y 13.
+
+* Listar tareas del usuario actual:
+> $ crontab -l
+
+* En _/etc/_ existen los siguientes directorios y archivos en donde programar tareas:
+	* _cron.deny_ -> Archivo con usuarios con uso de _cron_ denegado.
+	* _cron.d/_ -> Directorio tareas programadas de otros servicios.
+	* _hourly,daily,monthly,weekly_ -> Se ejecuta cada hora, día, mes y año.
+
+### Anacron
+
+* Ejecuta las tareas hourly,daily,montly y weekly cuando se inicia el sistema, teniendo en cuenta si ya se ejecutaron con anterioridad ese mismo día,
+
+* Está pensado para máquinas que no están siempre encendidos. Es una forma de asegurar que tareas importantes sean ejecutadas aunque la máquina estuviese apagada en el momento en el momento para el que estaban programadas.
+
+* Se ejecuta como máximo una vez al día.
+
+## Gestionar archivos temporales (1.346)
+
+* Anteriormente la utilidad _tmpwatch_ se lanzaba desde _cron.daily_ y eliminaba los archivos temporales de más de 10 días de _/tmp/_ y los de más de 30 días de_ /var/tmp/.
+
+* Actualmente los temporales están gestionados por _systemd-tmpfiles_ y se encuentran en _/run/_, el cual está en memoria.
+
+* systemd cada x tiempo comprueba los _timers_ (_systemd-tmpfiles-clean.timer_) y realiza la limpieza.
+
+* Archivo de configuración de la unidad _system-tmpfiles-clean.timer_:
+
+>[Timer]
+
+> OnBootSec=15min -> Espera 15 minutos tras iniciar.
+
+> OnUnitActiveSec=1d -> Se ejecuta 1 vez al día.
+
+### Ficheros de configuración  de temporales (1.347)
+
+* Documentación en:
+> $ man 5 tmpfiles.d
+
+* Directorios donde se almacenan los archivos de configuración de temporales:
+	* _/etc/tmpfiles.d/*.conf_; Es persistente y nadie nos lo va a machacar, es el que tiene mayor prioridad).
+	* _/run/tmpfiles.d/*.conf_: No es persistente.
+	* _/usr/lib/tmpfiles.d/*.conf_: Este no se deben editar manualmente, ya que son machacados por _systemd_, es el que tiene menor prioridad).
+
+* Formato de un archivo de configuración de temporales:
+> d /run/systemd/seats 0755 root root -
+    * Donde:
+    	1. directorio
+    	* ruta (si no existe lo crea).
+    	* permisos.
+    	* usuario.
+    	* grupo.
+    	* "-" (que no elimine temporales).
+    
+# Capítulo 14: Sistemas de archivos de red (1.353)
+
+## NFS (1.354)
+
+* Es estándar de Linux y Unix para sistemas de archivos de red.
+
+* En el _kernel_ se incluye un cliente _NFS_.
+
+* Forzar a que monte una unidad con una versión de _NFS_ concreta (por defecto lo intentará con la v4):
+> \# mount -o vers=3 classroom:/home/guest /datos
+
+### NFS v2 y v3
+
+* Las versiones 2 y 3 de _NFS_ tienen ciertas carencias:
+	* No escuchan interrupciones (no aceptaban un kill).
+	* Usan 6 o 7 puertos aleatorios (posibles problemas de firewall). Hay un puerto fijo (111-rpcbind), al que se le puede preguntar cuales son los puertos aleatorios. De todos modos estos puertos se pueden establecer en la configuración de servidor _NFS_.
+	* Si se dan pérdidas de paquetes se podía colapsar _NFS_.
+
+* Pueden usar _TCP_ o _UDP_.
+
+* Mostrar lo que está exportando un servidor (solo funciona con _NFS_ 2 o 3, no con 4):
+> $ showmount -e servidor.example.com
+
+### NFS v4
+
+* En _NFS_ versión 4 se hicieron ciertas mejoras en relación a v2 y v3:
+	* Rediseño del protocolo desde cero.
+	* Escucha interrupciones.
+	* Usa un puerto fijo (2049). Por retrocompatibilidad también usa el puerto 111 (aunque este siempre comunica que el puerto es 2049).
+	* Puede estar funcionando a la vez la versión 3 y 4.
+	* Un cliente siempre intentará conectar a la v4, si no lo consigue usará la v3.
+
+* Solo usa _TCP_.
+* Se integra con _kerberos_ por defecto, v3 tenía la opción de hacerlo.
+
+* Métodos de seguridad:
+	* **none**: Acceso anónimo a los archivos exportados, los cuales tendrán _UID_ y _GID_ de _nfsnobody_.
+	* **sys**: Es el por defecto, mantiene el _UID_ y el _GID_ de los archivos. Podría haber problemas de permisos ya que se podrían solapar los _UIDs_ entre servidor y cliente.
+	* **krb5**: Autenticacón mediante kerberos. Tiene que estar funcionando servidor kerberos en la red.
+	* **krb5i**: Autenticación mediante kerberos y cifra peticiones (datos en texto claro).
+	* **krb5p**: Autenticación mediante kerberos y cifra peticiones y datos.
+
+* Ya que no tiene _showmount_, en _NFS v4_ se puede montar todo lo que esté exportando un servidor:
+> \# mount classroom:/ /datos
+
+### Autofs (automounter) (1.364)
+
+* Documentación en:
+> $ man 5 autofs
+
+* Monta directorios bajo demanda: Cada vez que se acceda a un directorio gestionado por _autofs_, lo monta.
+    * Con un _ls_ no se montaría, es necesario acceder a él con _cd_.
+
+* Por defecto desmonta los directorios automontados tras 5 minutos de inactividad.
+
+* Los usuarios no necesitan ser _root_.
+
+* Es capaz de montar sistemas de archivos remotos en _nfs_, _samba_, _ftp_, etc.
+
+* Hasta _RHEL 6_ venía instalado y funcionando por defecto, en _RHEL 7_ no viene instalado por defecto. Para instalarlo:
+> \# yum install autofs
+
+* Ver que archivos de configuración instaló el paquete:
+> \# rpm -qc autofs
+
+#### Fichero principal de configuración de autofs (1.360)
+
+* Archivo de configuración en: _/etc/auto.master_
+
+> /misc	/etc/auto.misc -> cuando se entre a /misc, hará lo que esté configurado en el archivo _/etc/auto.misc_
+
+> /- /etc/auto.misc -> Con el "-" se indica que en _/etc/auto.misc_ las rutas son absolutas.
+
+* Ejemplo de uso:
+> \# vi /etc/auto.master.d/fer.autofs
+>>	/home/guests	/etc/auto.guests
+
+> \# vi /etc/auto.guests
+
+>> ldapuser7	-rw	classroom:/home/guests/ldapuser7
+
+>> \*	-rw classroom:/home/guests/&
+
+>>> Con "*" y "&" se consigue que cualquier directorio sea montado. Útil para montar por ejemplo _homes_ de usuarios.
+
+### Samba (1.368)
+
+* Protocolo de transmisión de archivos de _Microsoft_.
+
+* Buscar en qué paquete está el cliente de _samba_:
+> \# yum provides *smbclient
+
+* Instalar cliente de _samba_:
+> \# yum install -y samba-client
+
+* Listar recursos _samba_:
+> $ smbclient -L
+
+* Conectar a servidor _samba_:
+> \# smbclient -L //maquina/recurso
+	* Solicta usuario y contraseña.
+	* Permite hacer _get_, _put_, etc.
+
+* Montar recurso _samba_:
+> \# sudo mount -t cifs guest //serverX/share /mountpoint
+
+* Para evitar poner usuario y contraseña de _samba_ en texto claro en _/etc/fstab_, se usa la opción "credentials=/archivo" (este archivo solo lo puede leer root). (1.370)
+
+# Capítulo 15: Configuración de firewall (1.388)
+
+* _iptables_ solo gestiona reglas _IPv4_, para IPv6 existe _ip6tables_.
+
+* _systemd_ cuenta con el servicio _firewalld_. Es incompatible con _iptables_ y _ip6tables_.
+
+*  _firewalld_ soporta _IPv4_ y _IPv6_.
+
+* Herramienta grafica para configurar reglas de _firewalld_:
+> \# firewall-config
+
+    * Hay zonas (perfiles) predefinidas, es posible generar nuevas zonas.
+    
+    * Hay dos tipos de configuración:
+    	* Runtime: No es persistente.
+    	* Permanent: Es persistente.
+    
+    * _Rich rules_: Añadir reglas complejas.
+    
+    * _Sources_: Aplicar reglas dependiendo del origen.
+    
+* Herramienta de línea de comandos para configurar reglas de _firewalld_:
+> \# firewall-cmd
