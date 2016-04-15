@@ -1969,3 +1969,42 @@ A continuación se detalla todo el proceso de implementación de un almacenamien
     
 * Herramienta de línea de comandos para configurar reglas de _firewalld_:
 > \# firewall-cmd
+
+# Capítulo 16: Virtualización y Kickstart(1.401)
+
+## Kickstart
+Es el método de instalación automatizada de _RHEL 7_. Se automatiza gracias a la configuración indicada en un archivo _/root/anaconda-ks.cfg_.
+
+* Tiene dos partes obligatorias que se han de configurar:
+	* Comandos.
+	* Paquetes (_Firefox_, _yum_...).
+
+* Tiene dos partes opcionales:
+	* _Pre_: Comandos ejecutados antes de lanzar la instalación. Por ejemplo comprobar si el hardware cumple los requisitos, o clonar una partición. Esto se haría siempre en _bash_.
+	* _Post_: Comandos ejecutados depués de la instalacíon de la máquina. Por ejemplo crear un fichero, descomprimir un _zip_... Puede hacerse con _bash_ o con otro lenguaje que consideremos (_Python_, _Perl_...), incluso varios.
+
+* _Anaconda_ es el nombre del instalador de _Red Hat_.
+
+* AL terminar la instalación (manual o automatizada) se crea el archivo _/root/anaconda-ks.cfg_. Es posible usar dicho archivo para usarlo como plantilla para hacer instalaciones automatizadas.
+
+* _/root/anaconda-ks.cfg_:
+	* %packages: Sección de configuración de paquetes.
+	* @grupo: Grupo de paquetes.
+	* -paquete: No instalar cierto paquete. Pero si es una dependencia de otro lo instalará sin preguntar.
+	%post: Por defecto lo tratará como _bash_.
+
+* El comando _ksvalidator_ valida la configuración del archivo _Kickstart_ (valida las opciones, no los scripts _Pre_ y _Post_):
+> \# ksvalidator archivo-ks.cfg
+
+* Se puede usar la herramienta grafica _system-config-kickstart_ para configurar _Kickstart_. No está instalada por defecto:
+> \# yum install system-config-kickstart
+	* Al guardar la confgiración hace la validación de _ksvalidator_.
+
+* El comando _ksverdiff_ permite ver las diferencias de sintaxis entre el archivo de _Kickstart_ de _RHEL 6_  a _RHEL 7_.
+> \$ ksverdiff -f RHEL6 -t RHEL7
+
+* Iniciar la instalación en _Anaconda_ con un archivo de _Kickstart_:
+	1. Iniciar la isntalación vía _PXE_ o medio (CD/CDVD...).
+	* Presionar _TAB_ para editar la línea de comando del instalador.
+	* Añadir "ks=/ruta/archivo-ks.conf". El instalador tiene que poder llegar al él, por ejemplo: estar un USB, o en un servidor "ks=http://ruta/archivo-ks.conf" (o nfs:// o smb://) (1.414).
+		* También es posible indicarlo vía _DHCP_: presionando _TAB_ y añadiendo solo "ks").
