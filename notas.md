@@ -776,7 +776,7 @@ Por defecto no se instala la ayuda completa de SELinux (etiquetas, booleanos, ej
 
 Existen dos formatos en los que la información se guarda en disco:
 
-* **Formato MBR**:
+* **Formato MBR** (1.197):
     * Primeros 512 bytes
         * 446 bytes - sector de arranque (por ej grub).
         * 64 bytes - 4 entradas de tabla de particiones. No se puede tener más de 4 particiones primarias. Para solucionarlo se convierte una (y solo una) de las particiones primarias en extendida. Esta partición extendida tiene que ocupar todo el disco. O sea, una vez creada la extendida no se pueden crear más particiones. Habría que crear de última (4ª) la extendida. Quedando como máximo 12 particiones en la extendida y las 3 primarias.
@@ -795,7 +795,7 @@ Existen dos formatos en los que la información se guarda en disco:
         * Repetida la tabla GPT (o sea el 1er MB). De este modo hay redundancia.
     * Para gestionar discos, en RHEL7 existe la utilidad "gdisk".
 
-## Gestión de particiones
+## Gestión de particiones (1.198)
 
 * Referirse a una partición:
     * Por dispositivo en /dev/
@@ -2008,3 +2008,23 @@ Es el método de instalación automatizada de _RHEL 7_. Se automatiza gracias a 
 	* Presionar _TAB_ para editar la línea de comando del instalador.
 	* Añadir "ks=/ruta/archivo-ks.conf". El instalador tiene que poder llegar al él, por ejemplo: estar un USB, o en un servidor "ks=http://ruta/archivo-ks.conf" (o nfs:// o smb://) (1.414).
 		* También es posible indicarlo vía _DHCP_: presionando _TAB_ y añadiendo solo "ks").
+
+## Virtualización (1.420)
+
+* _KVM_ es tecnología de virtualización (por hardware) oficial de Linux (en forma de módulo del kernel).
+
+* _KVM_ fue comprado por _Red Hat_ en 2007.
+
+* _RHEV_ es la suite de virtualización de _Red Hat_. Funciona sobre _jboss_ o sobre _Windows_.
+
+* _RHEV_ se basa en _oVirt_ (es la versión "community").
+
+* _libvirtd_ gestiona virtualización (permite gestionar _KVM_ y _Xen_:
+
+* Herramientas para la gestión de virtualización (usa _libvirtd_ internamente):
+	* _virsh_: Herramienta CLI para gestión de virtualización.
+	* _virt-manager_: Herramienta graica para gestión de virtualización.
+
+* _VirtIO_ son drivers (red, memoria, PCI y disco) para máquinas virtualizadas en _KVM_. Disponibles para todos los sistemas operativos (Incluyendo _Windows_).
+
+* _VirtIO_ son gestionados por _qemu_ (es un virtualizador por software), se instala en el hipervisor.
