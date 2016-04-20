@@ -2028,3 +2028,5 @@ Es el método de instalación automatizada de _RHEL 7_. Se automatiza gracias a 
 * _VirtIO_ son drivers (red, memoria, PCI y disco) para máquinas virtualizadas en _KVM_. Disponibles para todos los sistemas operativos (Incluyendo _Windows_).
 
 * _VirtIO_ son gestionados por _qemu_ (es un virtualizador por software), se instala en el hipervisor.
+
+EOF
