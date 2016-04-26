@@ -599,6 +599,8 @@ Para cambiar de _enforcing_ o _permissive_ a _disable_ hay que reiniciar.
 * Añadir puerto a la etiqueta de apache para que pueda acceder apache a dicho puerto:
 > \# semanage port -a -t http_port_t -p tcp 666
 
+* Copiar etiqueta a _/srv/samba_ desde la que ya tiene establecida _/var/run/samba_:
+> \# semanage fcontext -a -e /var/run/samba /srv/samba
                 
 * Mostrar las reglas "customizadas". Por defecto en el sistema hay más de 5.000 reglas pre-establecidas.
 > $ semanage fcontext -lC
@@ -637,8 +639,6 @@ Permiten hacer activar o desactivar funcionalidades. Por ejemplo:
  
     * En modo gráfico: _policycoreutils-gui_ es una utilidad que muestra un _popup_ cuando hay una alerta de SELinux, mostrando información y posibles soluciones.
         * En Gnome aparecerá en "Applications->System Tools->SELinux Administration".
-
-
 
     * En consola: Los mensajes de _SELinux_ se guardan en _/var/log/audit.log_. Los que genera SELinux son tipo "AVC":
     > $ grep ^type=AC /var/log/audit.log
@@ -682,7 +682,7 @@ Por defecto no se instala la ayuda completa de SELinux (etiquetas, booleanos, ej
     * 18 (CONT): Continuar si el proceso se encuentra parado.
     * 19 (STOP): Congelar/dormir (ctrl+z). Cuando se quiera que vuelva a funcionar, se usa señal 18).
 
-        * Puede ser más interesante usar los nombres de las señales en lugar de los números, ya que puede que en algún sistema, por ejemplo _Freebsd_, una señal no tenga el mismo número que en linux.
+        * Puede ser más interesante usar los nombres de las señales en lugar de los números, ya que puede que en algún sistema, por ejemplo _Freebsd_, una señal no tenga el mismo número que en _Linux_.
 
 ## Otros comandos para la gestión de procesos
 
@@ -690,14 +690,13 @@ Por defecto no se instala la ayuda completa de SELinux (etiquetas, booleanos, ej
 > $ xeyes &
 
 * Continuar (CONT) ejecutado en _background_ procesos que se encuentran parados (STOP):
->  $ bg 
+>  $ bg
 
 * Matar todas las instancias de un programa refiriéndolo por nombre:
 > $ killall xeyes
 
 * Listar tareas activas de la sesión actual:
 > $ jobs -l
-
 
 * Matar una ventana de entorno gráfico:
 > $ xkill
@@ -764,13 +763,11 @@ Por defecto no se instala la ayuda completa de SELinux (etiquetas, booleanos, ej
 * Cambiar el nice de un proceso ya lanzado:
 > $ renice -n 8 xeyes
 
-
 * _top_ llama RealTime (RT) a las prioridades. Va de 0 a 39.
 
 * Con _top_ también se puede hacer un _renice_: con "r".
 
 * En la herramienta gráfica (Gnome) de procesos se puede hacer click derecho y cambiar el nice en la opción de "Change Priority->Custom".
-
 
 # Capítulo 8: Creación y montado de sistemas de archivos (1.191)
 
@@ -870,6 +867,7 @@ Existen dos formatos en los que la información se guarda en disco:
 # Capítulo 9: Gestión de servicios y troubleshooting de boot (1.227)
 
 ## systemd
+
 * Introducción a _systemd_: https://www.certdepot.net/rhel7-get-started-systemd/
 
 * Se encarga de:
@@ -883,7 +881,7 @@ Existen dos formatos en los que la información se guarda en disco:
 
 * El 95% de las distribuciones se pasaron a _systemd_.
 
-* En _RHEL 7_ se pueden trabajar con los comandos pre-systemd, Red Hat hicieron alias de los comandos viejos a los nuevos.
+* En _RHEL 7_ se pueden trabajar con los comandos pre-systemd, _Red Hat_ hicieron alias de los comandos viejos a los nuevos.
 
 * El estándar _Unix_ establece que en _/etc/_ están los archivos de configuración. En systemd todos los archivos de configuración son binarios.
 
@@ -901,7 +899,7 @@ Existen dos formatos en los que la información se guarda en disco:
 
 * _cron_ ha sido sustituido también por _systemd_. Aunque también sigue funcionando con a modo de compatibilidad.
 
-* systemctl tiene gestión de dependencias automática.
+* _systemctl_ tiene gestión de dependencias automática.
 
 ### Gestión de servicios con systemd 
 
@@ -1162,9 +1160,9 @@ Reparar problema de _fstab_ modificando _grub_:
 
 <center>2016-04-12 (martes)</center>
 
-# Gestión de software con yum (1.172)
+# Capítulo 7: Gestión de software con yum (1.163)
 
-## Obtención de información sobre paquetes
+## Obtención de información sobre paquetes (1.173)
 
 * Buscar paquetes en los repositorios instalados:
 > \# yum search bluetooth
@@ -1556,8 +1554,7 @@ Reparar problema de _fstab_ modificando _grub_:
 * Documentación en:
 > $ man [ lvm | pvcreate | vgcreate | lvcreate ]
 
-
-* En LVM están involucradas 3 capas:
+* En _LVM_ están involucradas 3 capas:
 
 	1. **pv** (phisical volumes):
         * Disco o partición. Idealmente deberían estar marcadas como LVM (en vez de linux, swap...). Esto se establece al particionar con _fdisk_.
@@ -1694,13 +1691,13 @@ A continuación se detalla todo el proceso de implementación de un almacenamien
 #### Formatear y montar sistema de archivos en el _lv_
 
 * Es posible referirse al _lv_ de dos formas:
-	* _/dev/vg_frenando/lv_datos_
+	* _/dev/vg_mivgroup/lv_datos_
 	* _/dev/mapper/vg_mivgroup-lv_datos_ (el kernel usa internamente esto)
 		
 	* Ambas enlazan a "/dem-0" (device mapper 0). Al hacer reboot esto puede cambiar, puede pasar a ser "dem-1" por ejemplo.
 
 * Crear sistema de archivos en el _lv_;
-> \# mkfs.xfs /dev/vg_feranndo/lv_datos
+> \# mkfs.xfs /dev/vg_mivgroup/lv_datos
 
 * Obtener _UUID_ del sistema de archivos:
 > \# blkid /dev/vg_feranndo/lv_datos
@@ -2028,5 +2025,3 @@ Es el método de instalación automatizada de _RHEL 7_. Se automatiza gracias a 
 * _VirtIO_ son drivers (red, memoria, PCI y disco) para máquinas virtualizadas en _KVM_. Disponibles para todos los sistemas operativos (Incluyendo _Windows_).
 
 * _VirtIO_ son gestionados por _qemu_ (es un virtualizador por software), se instala en el hipervisor.
-
-EOF
