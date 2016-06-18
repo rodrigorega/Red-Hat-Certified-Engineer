@@ -1,0 +1,2180 @@
+LICENZA PÚBLICA XERAL DE GNU
+Autorízase a reprodución, modificación e difusión das copias do presente documento
+
+*
+
+RED HAT System Administration I & II
+
+Notas de Rodrigo en: https://github.com/rodrigorega/Red-Hat-Certified-Engineer
+
+1.Acceso á liña de comandos
+[[ACCESO SSH INTERCAMBIANDO CLAVES]]
+
+- Comprobar si tenemos los paquetes instalados.
+  #rpm -qa openssh-server
+
+- Arrancar el Servidor Openssh
+  #systemctl start sshd.service
+
+- Parar el Servidor Opensh
+  #systemctl stop sshd.service
+
+-Habilitar el demonio para que arranque a inicio del sistema
+#systemctl start sshd.service
+#systemctl enable sshd.service
+
+- Generar par de claves
+  $ssh-keygen -t rsa -b 4096
+  Generating public/private rsa key pair.
+  Enter file in which to save the key (/home/usuario/.ssh/id_rsa):
+  Enter passphrase (empty for no passphrase): 
+  Enter same passphrase again: 
+  Your identification has been saved in /home/usuario/.ssh/id_rsa.
+  Your public key has been saved in /home/usuario/.ssh/id_rsa.pub.
+  The key fingerprint is:
+  1c:f3:57:g9:4a:62:24:ea:d2:db:b8:6c:ac:2e:fb:82 usuario@redhat
+  The key's randomart image is:
+  +---[RSA 4096]----+
+  |                          |
+  |                          |
+  |        . .               |
+  |       o o     .        |
+  |      . S ..   o        |
+  |   . o   =   . .        |
+  | .E o +   o o .      |
+  |  o. * o   + .         |
+  |   ++ *o.   .         |
+  +------------------------+
+
+- Para copiar la llave publica a una maquina remota usamos este comando.
+  #ssh-copy-id user@hostname
+  /usr/bin/ssh-copy-id: INFO: attempting to log in with the new key(s), to filter out any that    are already installed
+  /usr/bin/ssh-copy-id: INFO: 1 key(s) remain to be installed -- if you are prompted now it is    to install the new keys
+ student@redhat.server's password: 
+
+  Number of key(s) added: 1
+
+  Now try logging into the machine, with:   "ssh 'student@redhat.server'"
+  and check to make sure that only the key(s) you wanted were added.
+
+- Archivo de configuracion:
+#/etc/ssh/sshd_config
+
+- Usar autenticacion basada en claves, Deshabilitando la autenticacion por contraseña.
+  PasswordAuthentication no.
+
+
+2.Xestión de ficheiros dende a liña de comandos
+Un archivo se genera por defecto 644:
+-rw-rw-r--. 1 kiosk_am kiosk_am         0 Apr  7 09:39 file_permisions.txt
+
+los directorios por defecto 775:
+drwxrwxr-x. 2 student student 6 Apr  7 09:40 directorio
+
+El punto ya nos indica la presencia de selinux.
+
+#chmod   --> es el comando para cambiar permisos.
+
+User   |   Group   |   Other
+rwx          rwx       rwx        r=read, w=write, x=execute
+421          421       421 
+  s            s                  ficheros
+                s          t        directorios
+  4            2         1        -->tambien se pueden dar permisos especiales de forma numerica.
+
+#chmod g+w   directorio     -->le damos write al grupo
+#chmod a-w   directorio      -->quitamos write a todos
+#chmod ugo-w directorio   --> quita write a user,group,others
+#chmod a+rw  directorio      -->a todos les damos lectura escritura.
+
+En el modo numerico si nos falta algun numero, lo entiende como un cero.
+#chmod 777   -->darle todo a todos. XD.
+
+chmod -R   --> aplicamos de forma recursiva.
+
+-X    --> da ejecucion solamente al directorio.
+
+Con chown cambiamos los propietarios.
+
+#chown root directorio     --> cambia el propietario a root
+
+#chown :root directorio   -->  cambia solo el grupo.
+
+#chown  user:group
+
+Permisos especiales  ficheros--> s    s
+si son directorios                              s    t
+
+
+FICHEROS
+si tenemos s,   cualquier usuario puede ejecutarlo como root.  Se heredan los permisos del propietario del archivo.
+
+#ls  /usr/bin/passwd
+-rwsr-xr-x. 1 root root 27832 Jan 30  2014 /usr/bin/passwd
+
+# chmod 1777 andyfile3
+-rwxrwxrwt. 1 andy ateam 27 abr  7 10:02 andyfile3
+
+# chmod 7744 andyfile3 
+-rwsr-Sr-T. 1 andy ateam 27 abr  7 10:02 andyfile3
+
+si las letras son mayusculas, significa que debajo de esa letra no hay nada(x)
+
+DIRECTORIOS
+la s tiene un sentido diferente. es el permiso colaborativo. (esto entra en exam)
+
+cada usuario : grupo    tambien pertenece al grupo alumnos ---> si el directorio tiene s, al generar un archivo dentro o lo copias a un  direcotrio colaborativo, se cambian el grupo.  Mover arrastra los permisos.
+
+Sticky bit--> solo el propietario puede borrar los fichero o directorios.
+
+UMASK --> mascara por defecto.
+# umask 
+0022
+
+cuando creamos directorios  777
+                                                    022
+                                                    755
+Cuando crea un fichero    666
+                                               022
+                                               644
+
+$ umask
+0002
+creamos un directorio 777
+                                        002
+                                        776
+creamos un archivo    666
+                                        002
+                                        664
+
+se pueden generar mascaras de forma simbolica
+
+umask 0022
+umask ugo=rw
+
+3.Xestión local de usuarios e grupos Linux
+Un usuario puede pertenecer a varios grupos pero tiene que tener al menos 1
+cuando cree un fichero        pertenecera al usuario y a un grupo primario.
+RHEL -> Cuando se crea un        usuario tambien se crea un grupo para el usuario.
+al añadir usuarios se empieza        por el uid 1000.
+un usuario no puede empezar        por numero.
+
+id student  --> nos        devuelve uid, gid, groups
+[student@desktop7 ~]$ id   student
+uid=1000(student) gid=1000(student) groups=1000(student),10(wheel)
+
+/etc/passwd -> listado de        usuarios 
+/etc/shadow -> hashes de        contraseñas de usuarios
+/etc/gshadow -> hashes de        contraseñas de grupos
+
+# egrep student        /etc/passwd /etc/shadow /etc/group /etc/gshadow
+
+El root tiene el uid 0 puede        hacer lo que quiera
+"su -" para cambiar de usuario        "el - es para cambiar tambien el entorno de variables"
+tambien podemos ejecutar un        comando como usuario su - usuario -c "comando"
+
+sudo
+se configura con visudo,        comprueba la sintaxis para evitar gambadas
+
+visudo utiliza las variable        $EDITOR si esta vacia utiliza el vi, sino lo que queramos
+si EDITOR=/usr/bin/gedit lanza el gedit,
+/* el cambio de editor tambien        afecta a crontab -e y otros comandos*/
+el fichero de configuracion        esta en /etc/sudoers
+    
+## Allows people in group        wheel to run all commands
+%wheel    ALL=(ALL)    ALL
+    
+usuario    <desde la        localizacion>=(Como usuario) comandos
+ALL es comodin, 
+    
+el orden de las lineas        importan, se procesa en bloque si por ejemplo la 1 permite y la   2 deniega queda denegado.
+    
+Deberemos añadir al  usuario al grupo wheel utilizando el comando usermod.
+    
+#usermod -aG wheel student
+
+Cuentas de usuarios locales
+    
+usedadd -> añade usuario
+    
+usermod -> modifica usuario
+    
+userdel -> elimina usuario
+    
+           -r borra usuario y        directorio home
+    
+en /etc/login.defs se        establecen los valores por defecto al añadir un usuario
+    
+uid de usuarios
+    
+0- root
+    
+1-200 -> usuarios del        sistema reservado para redhat
+    
+201-999 -> usuarios de        sistema
+    
+1000+ -> usuario regulares
+    
+/etc/shadow
+    
+usuario:hash_clave:dias_desde_el_cambio_de_password:numero_minimo_de_dias_para_cambiar_el_password:numero_maximo_de_dias_para_cambiar_el_password:dias_antes_de_limite_para_mostrar_el_campo:
+    
+    Para cambiar la shell por defecto
+    #usermod -s /bin/csh "Comentario"  student
+    #usermod -s /sbin/nologin "Usuario Samba" student
+    
+SSSD
+    
+si la autentificacion local no        funciona sssd guarda una cache
+
+4.Control de acceso a ficheiros cos permisos do sistema de ficheiros de Linux
+ACL  --Listas de Control de ACcesos--
+ 
+ACL EN FICHEROS
+con las acls puedes tener mas de un propietario y grupo con sus  permisos.
+
+#getfacl fichero   --> para ver las acls
+# file: fichero
+# owner: root
+# group: root
+user::rw-
+group::r--
+other::r--
+
+setfacl -m u:student:rw fichero
+# file: fichero
+# owner: root
+# group: root
+user::rw-
+user:student:rw-
+group::r--
+mask::rw-
+other::r--
+
+una vez que tenemos acls, la segunda terna, no son los permisos del grupo, sino que es la mascara.
+Mascara --> es un valor que se va actualizando de forma automatica. Me muestra los permisos maximos de cualquier usuario. Hay mas propietarios dentro de la acl, con permisos de escritura. La mascara se recalcula cada vez que añadimos algo a la acl.
+
+# setfacl -m u:student:7 fichero 
+
+# getfacl fichero 
+
+# file: fichero
+# owner: root
+# group: root
+user::rw-
+user:student:rw-
+user:monty:rwx
+group::r--
+mask::rwx
+other::r--
+
+# chmod g-x fichero        -->con acl afecta a la mascara.
+Le cambiamos la ejecucion a la mascara. Una vez modificada la mascara seran los maximos permisos permitidos.
+
+Con el parametro -n  , no nos recalcula la mascara.
+setfacl -n
+
+Para borrar todas las acls, 
+#setfcacl -b fichero
+
+Cuando analiza las acl, una vez que se encuentra al usuario, ya no lo sigue interpretando.
+La mascara afecta a todo lo que hay entre el usuario original y la mascara.
+Si el usuario pertenece a dos grupos diferentes, y hay acls distintas para ambos grupos, te da los permisos del grupo menos restrictivos.
+
+ACL EN DIRECTORIOS
+# setfacl -m u:monty:7 acldir/
+
+# getfacl acldir
+
+Permisos heredables --> a lo que ya esta creado no le afecta. A partir de este momento le asigna estos permisos seteado por defecto.
+
+# setfacl -m d:u:student:7 acldir/         --> "d:" para asignar permisos por defecto.
+
+# getfacl acldir/
+# file: acldir/
+# owner: root
+# group: root
+user::rwx
+user:monty:rwx
+group::r-x
+mask::rwx
+other::r-x
+default:user::rwx
+default:user:student:rwx
+default:group::r-x
+default:mask::rwx
+default:other::r-x
+
+]# touch fichero_creado_acl
+[root@desktop7 acldir]# ll
+total 4
+-rw-rw-r--+ 1 root root 0 Apr  7 11:48 fichero_creado_acl
+[root@desktop7 acldir]# getfacl fichero_creado_acl 
+# file: fichero_creado_acl
+# owner: root
+# group: root
+user::rw-
+user:student:rwx            #effective:rw-
+group::r-x                        #effective:r--
+mask::rw-
+other::r--
+
+-- > al crear un fichero , se le quita los permisos de ejecucion, porque no se puede crear un fichero ejecutable por defecto.
+
+Propagar los permisos de  directorios  a otros ya creados.
+
+# getfacl acldir | setfacl -R --set-file=- /acldir/otrodirectorio/
+
+--set-file=-    -->El signo (-)es el STDIN que me viene a traves dela tuberia.
+
+Las ACLs solo valen en sistemas de ficheros POSIX(ext*)
+Hay que tener cuidado con las herramientas de compresion y de backup para que almacenen la informacion de acls.
+con chmod se cambian los permisos de usuario.
+Para cambiar los permisos de grupo usamos este comando.
+
+#setfacl -m g::rwx acldir/fichero
+
+##
+
+setfacl -m m::r directorio/file    -->añade acl
+
+setfacl -n -m u:student:rwx directorio/file   --> añade acl si recalcular la mascara
+
+5.Xestión de seguridade SELinux
+mecanismo de seguridad e nivel de kernel , que ya tiene 15 años.
+
+¿Qué hace?  es lo primero que se ejecuta cuando se carga el kernel en memoria.
+controla todo lo que hace el sistema, ficheros,sockets , recursos ...
+
+nos perimite auditar el acceso a todos los recursos..
+
+selinux tiene una base de datos que nos permite ver quien tiene acceso a que cosas...gracias a las etiquetas  o contextos.
+
+para que todo este absolutamente etiquetado, ha tardado....ahora esta todo basteante afinado.
+
+Si hacemos la configuracion desde el modo standar de selinux, no vamos a tener problemas....para cambiar cosas en selinux, deberemos crear contextos.
+
+Que es Selinux?
+Es una megabasededatos de quien puede acceder a que.
+* SElinux modes:
+      #getenforce --> para obtener el modo de SElinux.
+      #sestatus   -->nos da mas informacion acerca del estado de selinux.
+
+      #/etc/sysconfig/selinux  --> podemos ver los modos disponibles en selinux.
+
+      SELINUX= puede tomar uno de estos tres valores:
+      - enforcing - SELinux security policy is enforced.
+      - permissive - SELinux prints warnings instead of enforcing.
+      - disabled - No SELinux policy is loaded.º
+      
+      #setenforce  -->  nos permite cambiar el modo de SElinux.
+
+* SElinux Policy:
+      SELINUXTYPE= puede tomar uno de estos tres valores:
+           targeted - Targeted processes are protected,
+           minimum - Modification of targeted policy. Only selected processes are protected. 
+           mls - Multi Level Security protection.
+           
+
+Ya existen perfiles de otros software que no se distribuyen con redhat, como nagios....
+
+* Selinux Labels:
+      El contexto de un archivo o directorio puede consistir en 3 partes diferentes.                  (1.user, 2.role, 3.type)
+      Para ver el contexto en el sistema podemos ejecutar ls con el parametro -Z
+
+_u  --> usuario   _r --> rol    _t   --> tipo
+
+al crear el archivo  fuera de html -- arrastra el contexto
+si creamos el index.html  dentro de /var/www/html/  si esta dentro del contexto adecuado.
+
+ll -Z /var/www/html/index.html
+-rw-r--r--. root controller unconfined_u:object_r:httpd_sys_content_t:s0 index.html
+
+ll -Z /var/www/html/index2.html
+-rw-r--r--. root controller unconfined_u:object_r:admin_home_t:s0 index2.html
+
+
+Mover archivos con selinux nos dara problemas.
+
+Una vez movido para reconfigurar el contexto
+
+#restorecon -RFv /var/www/html/index2.html
+
+El primer campos es perfil de usuario. Mediante perfiles de usuario podemos controloar los permisos. Por defecto el usuario esta sin confinar.
+
+El segundo campo es el rol.
+
+El tercer campo es el tipo (tipo de recurso).
+
+Mover nuestra web a SRV
+
+El ultimo campo no se usa en red hat.
+
+ll -Zd vemos el contexto del directorio.
+ps -Z  vemos el contexto de los procesos.
+
+#grep -n ^DocumentRoot /etc/httpd/conf/httpd.conf
+
+Con semanage cambiamos el contexto del directorio para que sea legible y este dentro del contexto adecuado para que se pueda leer por apache.
+
+Para ver todas las Etiquetas de contextos, este comando.
+    #semanage fcontext -l      --> nos imprime una lista de contextos.
+
+#semanage fcontext -a -t "httpd_sys_content_t" '/srv/miweb(/.*)?'
+
+Todavia no hemos aplicado el contexto...
+
+#restorecon -FRv /srv
+
+restorecon reset /srv/miweb context unconfined_u:object_r:var_t:s0->system_u:object_r:httpd_sys_content_t:s0
+restorecon reset /srv/miweb/index3.html context unconfined_u:object_r:var_t:s0->system_u:object_r:httpd_sys_content_t:s0
+
+En RHEL7 podemos crear sandbox  --> para quitar las restricciones de selinux a aplicaciones concretas.
+
+----
+BOOLEANOS
+Para ver todos los booleans y su estado actual ejecutamos:
+    #getsebool -a
+Para ver con mas detalle:
+    #semanage boolean -l
+
+#semanage boolean -l | wc -l --> Nos muestra el número de booleanos definidos en el sistema. Los que hay.
+
+-Podemos ver los booleanos que afectan a ftp.
+#getsebool -a | grep ftp
+#semanage boolean -l | grep ftp
+
+para cambiar un boleano de manera no persistente
+#setsebool ftp_home_dir on
+
+con -P   lo hacemos persistente.
+
+#time setsebool -P ftp_home_dir on     --> nos indica el tiempo que tarda en recompilar la directiva.
+(el comando "time" nos indica el tiempo que tarda en completarse la ejecución del comando que le sigue: # time <comando>).
+
+Podemos buscar los puertos que usa httpd.
+#semanage port -l | grep httpd
+
+y cambiar la directiva para los puertos
+#semanage port -a -t http_port_t -p tcp 666
+
+mis customs
+semanage boolean -lC
+
+##
+cat /etc/selinux/config
+
+para ver 
+#getenforcing
+para cambiar
+#setenforce
+
+Entre enforcing y disable, hay que rebotear la maquina, para cambiar en caliente si se puede hacer entre enforcing y permisivo. 
+En permisivo, saltaran las alertas y todo, pero nos dejara hacer lo que sea. Lo podemos poner en permisivo para testear problemas.
+
+###############
+Instalar la ayuda de selinux.
+ sudo yum install selinux-policy-devel -y
+#mandb
+
+Como ver las alertas en un entorno de texto(shell).
+
+Los mensajes de error van en ---> /var/log/audit/audit.log
+
+#grep ^type=AVC /var/log/audit/audit.log | tail -n 1
+
+# grep setroubleshoot /var/log/messages | less
+
+#grep sealert /var/log/messages
+
+#grep sealert /var/log/messages 
+
+Para trabajar con selinux  de manera grafica
+#yum install policycoreutils-gui
+
+Los cambios en los boleanos de la gui se hacen persistentes.
+
+6.Monitorización e xestión de procesos Linux
+
+Comandos: "kill", "kilall", "top", "ps", "nice", "renice"
+
+Enviar señales a procesos: 
+    kill <nº | nombre señal> <pid del proceso>
+
+Señales destacadas: 
+    KILL = 9: Mata de manera incondicional un proceso (el proceso termina por las bravas entre gritos de dolor).
+    TERM = 15: Le pide amablemente a un proceso que se muera (el proceso puede capturarla y terminar controladamente).
+    STOP = 19: Detiene la ejecución de un proceso.  -->  Igual que  CTRL +Z
+    CONT = 18: Reanuda la ejecución de un proceso.
+    SIGHUP = 1 : Relee el archivo de configuración y aplica los cambios sin parar el servicio.
+    
+    Para listar todas las señales disponnibles usamos.
+    #kill -l
+1) SIGHUP         2) SIGINT         3) SIGQUIT         4) SIGILL         5) SIGTRAP
+ 6) SIGABRT         7) SIGBUS         8) SIGFPE         9) SIGKILL        10) SIGUSR1
+11) SIGSEGV        12) SIGUSR2        13) SIGPIPE        14) SIGALRM        15) SIGTERM
+16) SIGSTKFLT        17) SIGCHLD        18) SIGCONT        19) SIGSTOP        20) SIGTSTP
+21) SIGTTIN        22) SIGTTOU        23) SIGURG        24) SIGXCPU        25) SIGXFSZ
+26) SIGVTALRM        27) SIGPROF        28) SIGWINCH        29) SIGIO        30) SIGPWR
+31) SIGSYS        34) SIGRTMIN        35) SIGRTMIN+1        36) SIGRTMIN+2        37) SIGRTMIN+3
+38) SIGRTMIN+4        39) SIGRTMIN+5        40) SIGRTMIN+6        41) SIGRTMIN+7        42) SIGRTMIN+8
+43) SIGRTMIN+9        44) SIGRTMIN+10        45) SIGRTMIN+11        46) SIGRTMIN+12        47) SIGRTMIN+13
+48) SIGRTMIN+14        49) SIGRTMIN+15        50) SIGRTMAX-14        51) SIGRTMAX-13        52) SIGRTMAX-12
+53) SIGRTMAX-11        54) SIGRTMAX-10        55) SIGRTMAX-9        56) SIGRTMAX-8        57) SIGRTMAX-7
+58) SIGRTMAX-6        59) SIGRTMAX-5        60) SIGRTMAX-4        61) SIGRTMAX-3        62) SIGRTMAX-2
+63) SIGRTMAX-1        64) SIGRTMAX        
+
+Para ver los trabajos usamos el comando jobs o bg.
+#jobs
+# bg (numero de proceso)
+
+
+Comprobar la carga del sistema en un momento determinado (en %):
+    cat /proc/loadavg
+    Primer valor   = media de carga del último minuto.
+    Segundo valor = media de carga en los último 5 min.
+    Tercer valor = media en los últimos 15 min.
+    
+Prioridades de un proceso: 
+    Un proceso, por defecto se crea con una prioridad de 120. 
+    Mediante el uso de "nice" se puede modificar su prioridad pero siempre en el rango 100-139 (40 unidades).
+    Solo root puede reducir el valor nice de un proceso, aumentando su prioridad.
+    
+                                                            (-20--------0---------19) --> valores válidos de nice.
+          0                                              99  100        120         139
+PRI    |-------------------------------------|-----|---------|-----------|
+                                        NICE       -20      0        19
+                                                            |------|--------|
+    Un usuario solo puede aumentar el valor nice de un proceso (reducir su prioridad)
+    Un usuario no podrá bajar nunca el valor nice de un proceso. De este nodo, no podrá recuperar la prioridad previamente cedida.
+    
+    Para lanzar un proceso con una valor nice determinado:
+        nice -n <valor de incremento> <comando ejecutable>
+        Solo root puede llamar a nice (y a renice) con valores negativos.
+        
+    Para modificar el valor nice de un proceso:
+        renice -n <incremento> <pid...>
+
+#nice 6 ls
+#renice -n 6 -p $(pidof xeyes)
+
+7.Instalación e actualización de paquetes de software
+
+#Repositorios + Yum REDHAT#
+
+Configurar el repositorio.
+
+#[kiosk_am@foundationX$ cat /etc/yum.repo.d/rhel-dvd.repo
+[rhel-dvd]
+name="Remote classroom copy of dvd"
+enable=1   -->por defecto esta enable.
+baseurl=http://172.25.254.250/rhel7.2/x86_64/dvd
+gpgcheck=0
+
+Otra forma-->  # yum-config-manager --add-repo "  url_repositorio "
+
+Trabajando con Yum.
+
+#yum search bluetooth     --> nos muestra la cadena si esta en el nombre, o en la descripcion.
+
+#yum list *bluetooth*     --> solo acepta asterisco. Busca el paquete que se llame exactamente. 
+                              Aparecen los instalados y los disponibles.
+
+#yum info bluez    --> para ver la informacion del paquete. Nombre ,release, url del proyecto.
+
+# rpm -ql bluez    -->  para ver el contenido de un paquete.
+
+#yum provides /usr/bin/ls     --> nos muestra lo que nos instala el paquete. Este o no instalado. 
+                                  Con el path completo, o usando asterisco *.
+
+# yum deplist gnuplot       -->  nos muestra todas las dependencias a resolver.
+
+#rpm -V coreutils  ->   verificamos el paquete coreutils.
+
+#yum install coreutils     --> Instala.
+
+#yum update coreutils    --> actualiza.
+
+#yum reinstall coreutils    --> reinstala paquetes. No toca los archivos de configuración.
+
+#yum repolist   --> nos muestra las listas de paquetes disponibles en el repositorio.
+
+#rpm -qa       --> nos muestra los paquetess instalados en el sistema.
+
+#rpm -qa --last | head    --> nos muestra los 10 ultimos paquetes instalados, ordenados por fecha
+
+# yum history   ->  historico de transacciones de yum.
+
+#yum history info 15   --> nos muestra informacion mas especififca de la transaccion.
+
+#yum history undo 15   --> nos deshace la transaccion 15.
+
+#yum history undo 16 -->  seria una transaccion nueva con el undo 15. Nos deshace lo que hizo y rehace el paso 15.
+==
+#yum history redo 15  --> nos rehace la transaccion 15.
+
+No podemos tener el mismo paquete instalado dos veces. La excepcion es el kernel.
+Podemos tener 2 kernel instalados a la vez.
+
+#yum grouplist   --> nos muestra todos los paquetes necesarios.
+
+# yum grouplist install  "Virtualization Platform" --> instalamos los paquetes necesarios para un grupo.
+
+#yum group info "Virtualization Platform"
+
+#du -sh /var/cache/yum/x86_64/7Server/
+21M        /var/cache/yum/x86_64/7Server/
+
+#head -n 8 /etc/yum.repos.d/epel.repo
+
+###############################
+LINK PARA EPEL
+https://fedoraproject.org/wiki/EPEL/es    
+###############################
+
+wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+sudo rpm -Uvh epel-release-7*.rpm
+
+###############################
+
+EPEL no invalida el soporte de redhat.
+
+8.Creando y Montando #SISTEMAS DEA ARCHIVOS#.
+
+MBR  --> 512 bytes
+     -->446 b  (GRUB)
+     -->64 b   --4 particiones--(particiones primarias)/(solo una puede ser extendida)
+     -->2
+
+Este formato nos permite un tamañao maximo de 2TB.
+La particion extendida tiene que ocupar todo el resto del disco. 
+
+Lo ideal es tener 3 particiones primarias, y una extendida.
+En la extendida tenemos un maximo de 12 particiones.
+
+Podriamos llegar a tener 15 particiones.
+
+Solamente podremos usar un tamaño maximo de 2 TB.
+
+GPT  -->UEFI  --> Permite discos con un tamaño mas grande.
+
+GPT     --> 1MB    --> al final del disco tenemos la tabla GTP repetida.
+        --> 512bytes  MBR    --> compatibilidad con sistemas MBR.
+        --> HEAD  --> Es capaz de manejar 128 particiones Primarias. Las 4 primeras particiones estarian copiadas en los 512  bytes MBR.
+
+GPT esta soportado en RHEL 7, antes no.
+
+El comando fdisk solo es para sistemas MBR. Para trabajar en GPT, tenemos el comando gdisk.
+
+#lsblk
+NAME   MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+vda    253:0    0  10G  0 disk 
+└─vda1 253:1    0  10G  0 part /
+vdb    253:16   0  10G  0 disk 
+
+#fdisk /dev/vdb
+
+n
+p
+1
+value 2048
++200M
+t 83
+w
+
+The partition table has been altered!
+
+Calling ioctl() to re-read partition table.
+Syncing disks.
+
+#lsblk                   -->lista los block devices.
+
+# mkfs.xfs /dev/vdb1     ->>xfs es el standar de redhat
+meta-data=/dev/vdb1              isize=256    agcount=4, agsize=12800 blks
+         =                       sectsz=512   attr=2, projid32bit=1
+         =                       crc=0
+data     =                       bsize=4096   blocks=51200, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
+log      =internal log           bsize=4096   blocks=853, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+
+#blkid      --> Imprime los atributos de dispositivos.
+
+/dev/vda1: UUID="9bf6b9f7-92ad-441b-848e-0257cbb883d1" TYPE="xfs" 
+/dev/vdb1: UUID="56fb0bde-f04e-4bd6-8825-1a6ff6e81664" TYPE="xfs" 
+
+XFS esta orientado a sistemas con muchos archivos, BTRFS-->todavia no esta soportado por redhat.
+
+A la hora de utilizar los discos es mejor utilizar los UUID, porque los nombres de /dev/*   pueden variar si hay movimientos de hardware.
+
+Metemos el UUID  en /etc/fstab
+UUID=56fb0bde-f04e-4bd6-8825-1a6ff6e81664  /mnt/datos                xfs      defaults        1  2
+
+Creamos la carpeta en la ubicaion indicada.
+mkdir /mnt/datos
+
+Cuando creamos una segunda particion, y ya existe un disco montado, nos dara un warning, que el kernel no sabe que existe otra particion. 
+#partpobe /dev/vdb      --> partprobe fuerza al kernel a releer los discos.
+
+Desmontar los discos antes de manipular los discos con fdisk/gdisk.
+
+#mount   //  # umount
+
+# df -hT
+
+#blkid
+
+#lsof /mnt/datos   --> para ver quien esta usando el disco
+
+con lsof podemos emular a netstat --> viendop los sockets como ficheros.
+
+Las unidades extraibles se montan en:
+/run/media/nombre_de_usuario/nombre_dispositivo/
+
+9.Control de servizos e procesos.
+#SYSTEMD#
+Gran controversia meter systemd en linux. Por un lado hace cosas distintas. En Debian   en este momento se creo un fork.  //  Devuan.
+
+Aunque cambian muchas cosas, tenemos comandos antiguos que funcionan, se han creado alias que llaman al nuevo comando.
+service httpd start   >>  systemctl start httpd
+$ service sshd status
+Redirecting to /bin/systemctl status  sshd.service
+
+El standar decia  que todas las configuraciones estan en /etc/
+
+En systemd los ficheros de configuracion son binarios, no podemos modificar servicios con un editor de texto.
+2 implicaciones:  --solo tenemos una manera de trabajar.
+                               --es mas dificil meter la pata, por los warnings.
+
+Que hace??      --> Controla los servicios
+                --> Controla el arranque   __es el proceso numero 1 del arranque__
+                --> Por defecto todo es bastante automatico.
+                --> Cuando reiniciamos un servicio, se para el servicio, no se para el socket, no perdemos una sola conexion.
+                --> Paraleliza de una manera bastante agresiva. El maximo de cosas que puede en paralelo.
+                --> xinetd es un servicio especial para servicios con uso reducido. Systemd lo puede hacer con cualquier servicio.
+
+-->restart para el servicio, no el socket.
+--> reload hace los cambios en caliente
+
+"""
+# cat /etc/redhat-release 
+Red Hat Enterprise Linux Server release 7.0 (Maipo)
+
+[root@desktop7 ~]# rpm -qa systemd
+systemd-208-11.el7.x86_64
+"""
+
+#systemctl status sshd   
+sshd.service - OpenSSH server daemon
+   Loaded: loaded (/usr/lib/systemd/system/sshd.service; enabled)
+   Active: active (running) since Mon 2016-04-11 09:16:13 CEST; 36min ago
+  Process: 1172 ExecStartPre=/usr/sbin/sshd-keygen (code=exited, status=0/SUCCESS)
+ Main PID: 1182 (sshd)
+   CGroup: /system.slice/sshd.service
+           └─1182 /usr/sbin/sshd -D
+
+Los servicios pueden tener distintas unidades...Por defecto entiende que es SERVICIO.service
+* Service unit   -->  .service   -->  Servicio de sistema
+chkconfig se utilizaba para activar los servicios al inicio  -->  ahora usamos #systemctl enable sshd
+
+#systemctl list-units     --> nos lista todos los servicios de la maquina.
+
+# systemctl status bluetooth.service    -->  no nos interesa mantenerlo activo.
+
+#systemctl stop bluetooth.service    --> nos para el servicio.
+
+#systemctl disable bluetooth.service    -->  no arranca el servicio al inico.
+rm '/etc/systemd/system/dbus-org.bluez.service'
+rm '/etc/systemd/system/bluetooth.target.wants/bluetooth.service'
+
+#sytemctl mask bluetooth.service  --> enmascarar el servicio para que no se levante aunque algun otro servicio lo solicite. Enlaza el servicio a /dev/null.
+ln -s '/dev/null' '/etc/systemd/system/bluetooth.service'
+
+#systemctl list-unit-files
+
+Para ver las dependencias entre servicios.
+ #systemctl list-dependencies | grep target
+
+# systemctl list-dependencies | grep target
+default.target
+└─multi-user.target
+  ├─basic.target
+  │ ├─paths.target
+  │ ├─slices.target
+  │ ├─sockets.target
+  │ ├─sysinit.target
+  │ │ ├─cryptsetup.target
+  │ │ ├─local-fs.target
+  │ │ └─swap.target
+  │ └─timers.target
+  ├─getty.target
+  ├─nfs.target
+  └─remote-fs.target
+
+Podemos tener varios hilos en paralelo ejecutando cosas. Systemd paraleliza lo maximo posible.
+
+Los targets son los runlevels --
+* Target unit    -->  .target    -->  Grupo de systemd unit.
+
+# systemctl list-dependencies
+ La estructtura del arbol indica que son dependencias. Y que a su vez el anidamiento nos muestra los que estan en el mismo nivel
+ se ejecutan paralelo.
+
+-->> Hay un comando para ver las dependencias concretas de un servicio  ????¿¿¿¿  <<---
+
+Systemd tiene su propio gestor de logs.  Estan en binario, y se guardan en memoria. Los logs de systemd se replican a /var/log. 
+Si peta systemd puedes perder logs.  
+Estos logs los escribe en journalctl.
+Por defecto los logs permanecen desde el ultimo arranque. Los logs de systemd, no los logs de los servicios. 
+
+Systemd tambien se ha fundido el cron.
+
+SYSTEMCTL  --> tiene diferentes tipos de unidades.
+
+#systemctl -t help
+Available unit types:
+service                -->
+socket                -->
+target                -->
+device                -->
+mount                -->
+automount        -->
+snapshot        -->
+timer                -->alternativa a cron.
+swap                -->
+path                --> monitoriza un directorio o fichero
+slice                
+scope
+
+Estados de un servicio
+
+Cargado  , Activo, Activo y running, Activo y fuera, Activo y esperando, Inactivo, Habilitadfo, Deshabilitado, Statico(no se lanza en tiempo de arranque)
+
+#systemctl --failed
+UNIT                      LOAD   ACTIVE SUB    DESCRIPTION
+ovirt-guest-agent.service loaded failed failed oVirt Guest Agent
+rc-local.service          loaded failed failed /etc/rc.d/rc.local Compatibility
+rhnsd.service             loaded failed failed LSB: Starts the Spacewalk Daemon
+rngd.service              loaded failed failed Hardware RNG Entropy Gatherer Daemon
+
+LOAD   = Reflects whether the unit definition was properly loaded.
+ACTIVE = The high-level unit activation state, i.e. generalization of SUB.
+SUB    = The low-level unit activation state, values depend on unit type.
+
+4 loaded units listed. Pass --all to see loaded but inactive units, too.
+To show all installed unit files use 'systemctl list-unit-files'.
+
+#systemctl is-active sshd
+active                    --> nos devuelve true o false.
+#systemctl is-enable
+enable
+#systemctl list-units --type path
+
+Herramienta de analisis systemd.
+Systemd-analyze may be used to determine system boot-up performance statistics and retrieve other state and tracing information
+# systemd-analyze 
+Startup finished in 1.334s (kernel) + 3.261s (initrd) + 37.952s (userspace) = 42.548s
+
+# systemd-analyze blame   --> prints a list of all running units. Nos analiza por servicios
+
+# systemd-analyze critical-chain     --> prints a tree of the time-critical chain of units. Nos analiza las cadenas de dependencias.
+
+The time after the unit is active or started is printed after the "@" character.
+The time the unit takes to start is printed after the "+" character.
+
+graphical.target @29.614s
+└─multi-user.target @29.613s
+  └─libvirtd.service @23.339s +6.273s
+    └─network.target @23.181s
+      └─network.service @19.063s +4.115s
+        └─NetworkManager.service @14.908s +4.153s
+          └─firewalld.service @4.477s +10.428s
+            └─basic.target @4.378s
+
+#systemd-analyze plot > analisis.svg    --> para enviarlo a un archivo grafico.
+
+#display analisis.svg      --> desplegamos la imagen
+
+#systemctl list-dependencies cups.path
+
+
+Link para systemd
+https://www.certdepot.net/rhel7-get-started-systemd/
+
+10.Xestión de redes (#NETWORKING#)Linux Red Hat Enterprise
+
+ifconfig  --> deprecated
+
+network y network manager son incompatibles.
+Servicio network es distinto que network manager. Network manager es el que se integra con systemd. Habra que enmascarar network.
+
+# ip addr   ==  ip a     -->Ver la ip e interfaces.
+
+#ip route   == ip r     --> Ver las rutas
+
+#ip -s link show eth0
+
+#tracepath access.redhat.com    -->> Parecido a traceroute.
+
+#mtr access.redhat.com  -->traceroute y ping a la vez.
+
+netstat tambien desaparece y tenemos "ss"
+
+# ss -ta     --> conexiones abiertas
+#ss -tan     -->nos imprime los puertos
+
+Para ver como esta configurada la red.
+#systemctl status network
+# systemctl status NetworkManager
+
+#systemctl stop network    --> Paramos y deshabilitamos el daemon network.
+#sytemctl disable network
+
+nmcli es una herramienta para gestionar la red. Tenemos algunos ejemplos de configuracion en 
+-->   # man nmcli-examples
+
+#nmcli con show "System eth0" | less    -->nos muestra las conexiones, uuid, tipo y dispositivo
+
+#nmcli dev status
+
+# nmcli connection add con-name nombre ifname eth0 autoconnect yes type ethernet ip4 192.168.0.254/24 gw4 192.168.0.1
+
+# nmcli connection modify NOMBRE  ipv4.dns 192.168.0.2  +ipv4.dns 8.8.8.8
+
+--> cuando trabajamos con nmcli Network Manager no se entera.
+
+Tenemos que hacer un con reload, un con down ó con up.
+
+# nmcli connection reload
+
+Los archivos de configuiracion estan en :/etc/sysconfig/network-scripts/
+
+########
+HOSTNAME
+
+#hostnamectl
+
+#hostnamectl set-hostname server0.example.com   --> nops hace el hostname persistente. Nos crea un archivo en /etc/hostname
+
+el dns esta en /etc/resolv.conf
+
+los hosts  en /etc/hosts     
+
+11.Análise e almacenamento de logs  , ntp  , chronyd.    
+   ###   LOGS  ###
+
+* _systemd_ tiene su propio sistema de logs, _journald_, el cual coexiste con el clásico _rsyslog_.
+
+* Archivos de logs mantenidos por _rsyslog_:
+    * _/var/log/messages_: La mayoría de los mensajes de sistema.
+    * _/var/log/secure_: Logs de seguridad y autenticación.
+    * _/var/log/maillog_: Logs relacionados con el servidor de correo.
+    * _/var/log/cron_; Logs de tareas ejecutadas periódicamente.
+    * _/var/log/boot.log_: Logs de inicio de sistema.
+
+* Hay 8 niveles de tipos de mensajes de log. Siendo 0 el más grave y 7 el menos:
+
+    0. emerg: El sistema es totalmente inusable. Lo que se conoce como _kernel panic_.
+    1. alert: Requiere acción inmediata por parte del administrador.
+    2. critic: Algo importante ha ocurrido. Afecta al servicio.
+    3. error: Error no crítico. No afecta al servicio.
+    4. warning: Algo pasa pero no interrumpe el servicio.
+    5. notice: Evento normal pero significante.
+    6. info: Notificación estándar.
+    7. debug: Mensajes de depuración.
+    
+--> rsyslog
+
+* Obtener estado del servicio _rsyslog_:
+# systemctl status rsyslog.service
+
+* Archivo de configuración en: _/etc/rsyslog.conf_
+
+* Documentación archivo de configuración:
+# man rsyslog.conf
+
+--> /etc/rsyslog.conf (1.292)
+
+* Documentación en:
+
+    * _man rsyslog.conf_
+    * _/usr/share/doc/rsyslog-*/manual.html
+
+* Sección de módulos:
+
+    * En ella se configura la recepción de logs desde otras máquinas.
+
+        * Se pueden recibir vía _UDP_ (no se podría cifrar) ío va _TCP_ (es posible hacerlo de manera cifrada).
+
+* Sección de reglas:
+
+    * En ella se especifica en dónde se guardarán los logs.
+ 
+        * _.*_ son todos los niveles de log excepto el _debug_.
+        
+        * Todo _info_ o superior excepto servicio _mail_ van a _messages_:
+                * *.info;mail.none; /var/log/messages
+
+        * Escritura asíncrona, el "-" antes de la ruta:
+                * mail.* /var/log/cron -/var/log/maillog
+        
+        * Mandar logs de _info_ o superior a otro servidor vía _udp_:
+                * *.info        @server4.example.com
+
+        * Mandar logs de _info_ o superior a otro servidor vía _tcp_:
+                * *.info        @@server4.example.com
+        
+        * Mandar todos los logs _info_ excepto los de _mail_ y _cron_:
+           * *.info;mail.none;cron.none    /var/log/messages
+
+--> logrotate (1.293)
+
+* No es un servicio, es un binario ejecutado desde _cron_.
+
+* Configuración en _/etc/logrotate_.
+
+* Se puede rotar por fecha o por tamaño.
+
+* Funciona por fichero o directorio.
+
+* Por defecto los logs rotan una vez a la semana.
+
+* Por defecto almacena un mes de logs.
+
+* En _RHEL 7_ los archivos rotados son renombrados con su día de rotación.
+
+* Comando para crear logs manualmente (1.294):
+# logger -p cron.err "Error falso del CRON"
+    * Admite auth, authpriv, cron, daemon, kern, lpr, mail, mark, news, security, syslog, user, uucp y local0 a local7. En "man rsyslog.conf" se ve esta lista detalladamente.
+    * _logger_ manda tanto a _rsyslog_ como a _journal_.
+
+--> journalctl (1.297)
+
+* Documentación en: 
+
+# man systemd-journald
+
+# man systemd.journal-fields
+
+* Archivo de configuración: /etc/systemd/journal.conf
+
+* Obtener estado del servicio _systemd-journald_:
+# systemctl status systemd-journald.service
+
+* Por defecto los logs se almacenan en binario en /run/log/journal  y no son persistentes.
+
+* Consultar los logs de  systemd:
+# journalctl
+
+* Mostrar útimas 10 líneas y las más recientes en tiempo real (como _tail -f_):
+# jornalctl -f
+
+* Ver mensajes con prioridad _error_:
+# journalctl -p err
+
+* Filtrar por fechas (1.298):
+
+# jornalctl --since "2016-04-13 9:50:00"
+
+# jornalctl --since "2016-04-13 9:50:00" --until "2016-04-13 10:00:00"
+
+* Filtrar por servicio (se debe indicar el ".service"):
+# journalctl _SYSTEMD_UNIT=sshd.service
+
+* Obtener más información:
+# jounalctl -o verbose
+
+--> journal persistente (1.301)
+
+* Para habilitar la persistencia de logs basta con crear el directorio /var/log/journal.
+
+# mkdir /var/log/journal
+# chown root:systemd-journal /var/log/journal
+# chmod 2755 /var/log/journal
+-->despues rebootea el sistema  o  manda una señal USR1
+# killall -USR1 systemd-journald
+
+* Por defecto se realiza un rotado mensual.
+
+* El _journal_ no puede crecer más del 10% del sistema de ficheros ni dejar menos de 15% de espacio libre en el mismo. Estos valores son configurables en:
+    /etc/systemd/journald.conf
+
+* Una vez se tiene _journal_ persistente se obtienen los logs desde el último inicio con:
+# jounalctl -b
+
+* Obtener logs de inicios anteriores. Por ejemplo, de hace dos:
+# journalctl -b -2
+
+
+  ###  TIME SETTINGS  ##
+  
+  #NTP    +    CHRONY#
+
+Es importante tener las maquinas sincronizadas. Por ejemplo con una diferencia de un minuto , una maquina que se logea contra un kerberos.
+
+Los problemas de hora, suelen afectar a muchos servicios.  DATE  --  
+#date   --> nos da la hora
+#rdata   --> nos da la hora remota
+ 
+# rdate hora.roa.es ; date   --> comparamos nuestra hora local con otra externa.
+
+Automaticamente los pilla del www.pool.ntp.org
+
+#timedatectl   --> nos da la fecha y hora con mas detalle.
+
+Si la diferencia horaria es de mas de 20 min, no sincroniza...Facemolo a man
+
+#timedatectl list-timezones | grep Madrid
+
+#timedatectl set-timezone Europe/Madrid
+
+* Asistente para localizar zona horaria:
+# tzselect
+
+* Establecer zona horaria:
+# timedatectl set-timezone America/Port-au-Prince
+
+* Configurar hora de forma manual:
+# timedatecl set-time 9:00:00
+
+* Habilitar sincronización _NTP_
+# timedatectl set-ntp true
+
+Servicio chronyd
+
+* La funcionalidad que antes cubría _NTP_ está dentro de _systemd_ como el servicio _chronyd_.
+    * _NTP_ tiene dos limitaciones. _systemd_ las gestiona mejor ya que las automatiza:
+            * No sincroniza la hora en el momento, lo va haciendo en saltos pequeños. Para evitar saltos discontinuos. O sea para evitar saltos de tiempo ilógicos.
+            * Tiene un tope: No sincroniza si la diferencia es mayor de 20 minutos.
+    
+* Archivo configuración de _chronyd_ en _/etc/chrony.conf_.
+
+* Documentación:
+
+> $ man chronyd
+
+> $ man chrony.conf
+
+* _chronyc_ es el cliente del servidor _chronyd_.
+
+#chronyd sources -v    --> nos muestra como esta configurado.
+
+Stratum son los saltos de separacion que hay en el medio de la conexion a un reloj atomico. Cuanto menor sea el stratum, mayor prioridad.
+
+MS Name/IP address         Stratum Poll Reach LastRx Last sample
+===============================================================================
+^* i2t15.i2t.ehu.eus             1  10   377   904   -245us[ -469us] +/-   18ms
+^- masip.celingest.es            2  10   137   433  +1105us[+1105us] +/-   86ms
+^- dnscache-madrid.eu.verio.     2  10   377   136  +1463us[+1463us] +/-   69ms
+
+
+12.Xestión de sistemas de ficheiros e almacenamento.
+
+#LVM#
+
+lvm funciona con 3 capas.       --> discos enteros o particiones. Deben estar marcadas  LVM (8e)
+                                --> PV:Physical Volume. Lvm sabe que unidades fisicas pertenecen a ese grupo.
+                                --> VG:Volume Group. Agrupa los volumenes fisicos que sean. Es un disco para trabajar. Puede contener discos o particiones.
+                                --> LV:Logical Volume. Creamos los volumenes logicos.  Estos volumenes logicos tienen que recibir formato. Mejor xfs, ext4. Un logical volume sin               
+                                      formato no tiene UID. Se le da un UID cuando lo formateamos.
+
+Nos referimos a los dispositivos de 2 formas 
+-->  /dev/vg_name/lv_name      
+-->  /dev/mapper/vg_name-lv_name
+
+#EXTEND#  tiene quye ser potencia de 2. 4k, 8g, 512mb, 1024, 2048...
+
+        en xfs --> 20E = 80Gb    //   en ext4 --> 15PE 70G
+
+El tamaño de los extends lo definimos cuando creamos los VG. 
+
+# fdisk /dev/vdb
+Disposit. Inicio    Comienzo      Fin      Bloques  Id  Sistema
+/dev/vdb1            2048     4196351     2097152   8e  Linux LVM
+/dev/vdb2         4196352    10487807     3145728   8e  Linux LVM
+
+# partprobe /dev/vdb                -->informa al SO de que la tabla de particiones ha cambiado.
+
+[root@desktop7 ~]# lsblk        -->lista los block devices
+
+NAME   MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+vda    253:0    0  10G  0 disk 
+└─vda1 253:1    0  10G  0 part /
+vdb    253:16   0  10G  0 disk 
+├─vdb1 253:17   0   2G  0 part 
+└─vdb2 253:18   0   3G  0 part 
+
+# pvcreate /dev/vdb1 /dev/vdb2       --> Crea un Physucal Volume.
+  Physical volume "/dev/vdb1" successfully created
+  Physical volume "/dev/vdb2" successfully created
+
+# pvs    //   # pvdisplay
+  PV         VG   Fmt  Attr PSize PFree
+  /dev/vdb1       lvm2 a--  2,00g 2,00g
+  /dev/vdb2       lvm2 a--  3,00g 3,00g
+
+# vgcreate -s 1M vg_student /dev/vdb1         --> "-s"  le asignamos el tamaño del extend
+  Volume group "vg_student" successfully created
+
+# vgs  // # vgdisplay  //  # vgdisplay vg_student
+
+# vgextend vg_student /dev/vdb2          --> para extender un Volume Group.
+  Volume group "vg_student" successfully extended
+
+Al crear un lvm   " -L" == tamaño   "-l" == numero de extends. 
+
+# lvcreate -L 1G -n lv_datos vg_student      --> Crear un Logical Volume.
+  Logical volume "lv_datos" created
+
+# lvs   // # lvdusplay  //  # lvdisplay vg_student/lv_datos
+  LV       VG         Attr       LSize Pool Origin Data%  Move Log Cpy%Sync Convert
+  lv_datos vg_student -wi-a----- 1,00g 
+
+Nos podemos referir a los volumenes logicos de dos maneras distintas.
+# ll /dev/vg_student/lv_datos 
+lrwxrwxrwx. 1 root root 7 abr 13 12:20 /dev/vg_student/lv_datos -> ../dm-0
+
+# ll /dev/mapper/vg_student-lv_datos 
+lrwxrwxrwx. 1 root root 7 abr 13 12:20 /dev/mapper/vg_student-lv_datos -> ../dm-0      --> el kernel usa el segundo por defecto. Es mejor usar este.
+
+Le damos formato
+# mkfs.xfs /dev/mapper/vg_student-lv_datos 
+meta-data=/dev/mapper/vg_student-lv_datos isize=256    agcount=4, agsize=65536 blks
+         =                       sectsz=512   attr=2, projid32bit=1
+         =                       crc=0
+data     =                       bsize=4096   blocks=262144, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
+log      =internal log           bsize=4096   blocks=2560, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+
+Al formatearlo ya tenemos un UID
+Añadimos al fstab --> /dev/mapper/vg_student-lv_datos    /mnt/datos                xfs        defaults        1        2        
+
+Extendemos La particion.
++  --> para que aplie lo que tenemos
+-r  ->automaticamente hace el resize.
+
+# lvextend -L +500M -r /dev/vg_student/lv_datos 
+  Extending logical volume lv_datos to 1,49 GiB
+  Logical volume lv_datos successfully resized
+meta-data=/dev/mapper/vg_student-lv_datos isize=256    agcount=4, agsize=65536 blks
+         =                       sectsz=512   attr=2, projid32bit=1
+         =                       crc=0
+data     =                       bsize=4096   blocks=262144, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
+log      =internal               bsize=4096   blocks=2560, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+data blocks changed from 262144 to 390144
+
+TIP: dd if=/dev/urandom of=/mnt/datos/random.txt  bs=1M count=100   ->> creamos un archivo de 100 M con contenido aleatorio.
+
+13.Planificación de tarefas de sistema
+
+14.Montado de sistemas de ficheiros de rede
+
+## NFS (1.354)  ##
+
+* Es estándar de Linux y Unix para sistemas de archivos de red.
+
+* En el _kernel_ se incluye un cliente _NFS_.
+
+* Forzar a que monte una unidad con una versión de _NFS_ concreta (por defecto lo intentará con la v4):
+# mount -o vers=3 classroom:/home/guest /datos
+
+--> NFS v2 y v3
+
+* Las versiones 2 y 3 de _NFS_ tienen ciertas carencias:
+        * No escuchan interrupciones (no aceptaban un kill).
+        * Usan 6 o 7 puertos aleatorios (posibles problemas de firewall). Hay un puerto fijo (111-rpcbind), al que se le puede preguntar cuales son los puertos aleatorios. De todos modos estos puertos se pueden establecer en la configuración de servidor _NFS_.
+        * Si se dan pérdidas de paquetes se podía colapsar _NFS_.
+
+* Pueden usar _TCP_ o _UDP_.
+
+* Mostrar lo que está exportando un servidor (solo funciona con _NFS_ 2 o 3, no con 4):
+
+# showmount -e servidor.example.com
+
+### NFS v4   ###
+
+* En _NFS_ versión 4 se hicieron ciertas mejoras en relación a v2 y v3:
+        * Rediseño del protocolo desde cero.
+        * Escucha interrupciones.
+        * Usa un puerto fijo (2049). Por retrocompatibilidad también usa el puerto 111 (aunque este siempre comunica que el puerto es 2049).
+        * Puede estar funcionando a la vez la versión 3 y 4.
+        * Un cliente siempre intentará conectar a la v4, si no lo consigue usará la v3.
+
+* Solo usa _TCP_.
+* Se integra con _kerberos_ por defecto, v3 tenía la opción de hacerlo.
+
+* Métodos de seguridad:
+        * **none**: Acceso anónimo a los archivos exportados, los cuales tendrán _UID_ y _GID_ de _nfsnobody_.
+        * **sys**: Es el por defecto, mantiene el _UID_ y el _GID_ de los archivos. Podría haber problemas de permisos ya que se podrían solapar los _UIDs_ entre servidor y cliente.
+        * **krb5**: Autenticacón mediante kerberos. Tiene que estar funcionando servidor kerberos en la red.
+        * **krb5i**: Autenticación mediante kerberos y cifra peticiones (datos en texto claro).
+        * **krb5p**: Autenticación mediante kerberos y cifra peticiones y datos.
+
+* Ya que no tiene _showmount_, en _NFS v4_ se puede montar todo lo que esté exportando un servidor:
+# mount classroom:/ /datos
+
+
+--> AUTOFS (automounter) (1.364)
+
+* Documentación en:
+> $ man 5 autofs
+
+* Monta directorios bajo demanda: Cada vez que se acceda a un directorio gestionado por _autofs_, lo monta.
+    * Con un _ls_ no se montaría, es necesario acceder a él con _cd_.
+
+* Por defecto desmonta los directorios automontados tras 5 minutos de inactividad.
+
+* Los usuarios no necesitan ser _root_.
+
+* Es capaz de montar sistemas de archivos remotos en _nfs_, _samba_, _ftp_, etc.
+
+* Hasta _RHEL 6_ venía instalado y funcionando por defecto, en _RHEL 7_ no viene instalado por defecto. Para instalarlo:
+# yum install autofs
+
+* Ver que archivos de configuración instaló el paquete:
+# rpm -qc autofs
+
+/etc/auto.master
+/etc/auto.misc
+/etc/auto.net
+/etc/auto.smb
+/etc/autofs.conf
+/etc/autofs_ldap_auth.conf
+/etc/sysconfig/autofs
+/usr/lib/systemd/system/autofs.service
+
+#### Fichero principal de configuración de autofs (1.360)
+
+* Archivo de configuración en: /etc/auto.master      //   /etc/automaster.d/
+
+> /misc        /etc/auto.misc -> cuando se entre a /misc, hará lo que esté configurado en el archivo /etc/auto.misc
+
+> /- /etc/auto.misc -> Con el "-" se indica que en /etc/auto.misc las rutas son absolutas.
+
+* Ejemplo de uso:
+# vim  /etc/auto.master.d/guests.autofs
+insert:       /home/guests        /etc/auto.guests
+
+# vim /etc/auto.guests
+
+insert:  ldapuser7        -rw,sync        classroom.example.com:/home/guests/ldapuser7
+
+insert:  *        -rw,sync  classroom:/home/guests/&
+
+>>> Con "*" y "&" se consigue que cualquier directorio sea montado. Útil para montar por ejemplo _homes_ de usuarios.
+
+
+### SAMBA (1.368) ###
+
+* Protocolo de transmisión de archivos de _MicroFull_.
+
+* Buscar en qué paquete está el cliente de _samba_:
+# yum provides *smbclient
+
+* Instalar cliente de _samba_:
+# yum install -y samba-client
+
+* Listar recursos _samba_:
+# smbclient -L
+
+* Conectar a servidor _samba_:
+# smbclient -L //maquina/recurso
+        * Solicta usuario y contraseña.
+        * Permite hacer _get_, _put_, etc.
+
+* Montar recurso _samba_:
+# sudo mount -t cifs guest //serverX/share /mountpoint
+
+* Para evitar poner usuario y contraseña de _samba_ en texto claro en _/etc/fstab_, se usa la opción "credentials=/archivo" (este archivo solo lo puede leer root). (1.370)
+
+15.Limitar as comunicacións de rede con firewalld
+Firewalld --> es el que nos permite monitorizar y crear reglas en netfilter.
+Para gestionar el firewall usamos el comando "firewall-cmd"
+
+#firewall-cmd -h    -->obtenemos la ayuda.
+
+# firewall-cmd --get-default-zone   //  --set-default-zone
+public
+
+# firewall-cmd --get-active-zones   
+public
+  interfaces: eth0
+
+# firewall-cmd --get-zones
+block dmz drop external home internal public trusted work
+
+# firewall-cmd --get-services   //
+amanda-client bacula bacula-client dhcp dhcpv6 dhcpv6-client dns ftp high-availability http https imaps ipp ipp-client ipsec kerberos kpasswd ldap ldaps libvirt libvirt-tls mdns mountd ms-wbt mysql nfs ntp openvpn pmcd pmproxy pmwebapi pmwebapis pop3s postgresql proxy-dhcp radius rpc-bind samba samba-client smtp ssh telnet tftp tftp-client transmission-client vnc-server wbem-https
+
+# firewall-cmd --list-all
+public (default, active)
+  interfaces: eth0
+  sources: 
+  services: dhcpv6-client ssh
+  ports: 
+  masquerade: no
+  forward-ports: 
+  icmp-blocks: 
+  rich rules: 
+
+Añadir un servicio en caliente y de forma permanente
+# firewall-cmd --add-service=nfs 
+# firewall-cmd --add-service=nfs --permanent
+# firewall-cmd --reload
+
+Añadimos un source a nuestra zona interna.
+
+# firewall-cmd --zone=internal --add-source=172.25.7.10/24
+
+# firewall-cmd --zone=internal --add-source=172.25.7.10/24 --permanent 
+
+# firewall-cmd --zone=internal --list-all 
+internal
+  interfaces: 
+  sources: 172.25.7.10/24 172.25.7.10
+  services: dhcpv6-client ipp-client mdns samba-client ssh
+  ports: 
+  masquerade: no
+  forward-ports: 
+  icmp-blocks: 
+  rich rules: 
+
+16.Virtualización e kickstart
+#################################################
+[[ANEXO I: LAB COMPRENSIVE REVIEW I ]]
+
+--> Mostrar las 12 primeras lineas de un documento: "head"
+
+# head -n 12 /path/archivo_origen  > /path/archivo_destino
+
+--> Mostrar las 12 ultimas lineas de un documento: "tail"
+
+# tail -n 12 /path/archivo_origen  > /path/archivo_destino
+
+Utilizar (>>) para concatenar el contenido a u documento.
+
+--> Crear multiples archivos con rangos de valores. "touch"
+
+# touch /path/machine{1..20}-month{jan,feb,mar}.txt
+
+--> Crear Directorios con rangos.  "mkdir"
+
+# mkdir -p /home/path/{jan,feb,mar}
+
+-->cambiar la politica de creacion de usuarios global.
+
+# vim /etc/login.defs
+
+--> Crear un grupo asignando un GUID. "groupadd"
+
+# groupadd -g 3000 instructores
+-->
+--> Calcular fechas. "date"
+# date -d "+60 days"
+
+--> Cambiar los tiempos de expiracion de usuarios. "chage -E"
+# chage -E 26-04-2016 usuario
+
+-->aplicar los dos comandos a la vez.  
+chage -E `date -d "30 days" +"%Y-%m-%d"` usuario
+
+--> Asignar una policy para el cambio de password cada 10 dias. "chage -M"
+# chage -M 10 usuario
+
+--> Forzar a los usuarios a cambiar su contraseña en el primer login. "chage -d 0"
+#chage -d 0 usuario
+
+-->Cambiar la zona horaria de manera interactiva del server ."tzaselect"
+#tzselect
+
+-->Cambiar la zona horaria en caliente. "timedatectl"
+#timedatectl --set-timezone Pais/Region
+
+-->Dumpear a un archivo los logs entre dos tiempos dados. "journalctl"
+#journalctl --since 09:00:00 --until 10:10:10 >/home/path/archivo_destino
+
+En el ejercicio se pide meter el comando, no el resultado de ejcutarlo.
+echo"journalctl --since 09:09:05  --until 09:15:00" > archivo de destino.ttxt
+
+-->Configurar ip estatica.
+# nmcli connection add con-name nombre ifname enp6s0 type ethernet ip4 172.25.7.11 gw4 172.25.7.254
+# nmcli connection modify "nombre" ipv4.dns 172.25.254.254
+# nmcli connection modify "nombre" connection.autoconnect yes
+#nmcli con modify "nombre" ipv4.addresses '172.25.7.11/24  172.25.7.254'       --> para modificar el gateway
+	
+# rsync -av /etc/ configbackup/                            -->sincronizar dos directorios.
+
+# tar -zcvf archive-name.tar.gz directory-name      --> comprimir un directorio
+
+-->Modificar el hostname. Y añadir un pc en /etc/hosts.
+#hostnamectl set-hostname server7.example.com
+#echo "10.0.0.1 myhost" >> /etc/hosts
+
+-->Configurar los repositorios.
+#vim /etc/yum.repos.d/nombre.repo
+[updates]
+name=Red Hat Updates
+baseurl=http://content.example.com
+enable=1
+gpgcheck=0
+
+[[ANEXO 2-  LAB COMPRENSIVE REVIEW II ]]
+-->Login mediante LDAP, y encriptacion kerberos.  "authconfig-gtk" + "sssd"
+instalar -->   authconfig-gtk    ,  sssd,  nss-pam-ldapd, krb5-workstation, pam_krb5
+
+$ sudo yum install authconfig-gtk sssd nss-pam-ldapd  krb5-workstation pam_krb5 -y             --> cuando arrancamos authconfig-gtk  resolver dependencias.
+
+-->Montar el home a traves de NFS.   "autofs"
+$sudo yum install autofs -y
+
+$sudo vim /etc/auto.master.d/guests.autofs
+insert:  --> /home/guests        /etc/auto.guests
+
+$sudo vim /etc/auto.guests
+insert: --> * -rw,sync        classroom.example.com:/home/guests/&
+
+#systemctl start autofs.service
+#systemctl enable autofs.service
+
+--> Exportar un directorio mediante CIFS, al inicio.
+# yum install cifs-utils
+
+# mkdir -p /mnt/westeros
+
+# vim /root/tyrion.creds
+insert: --> username=tyrion
+        --> password=slapjoffreyslap
+
+# chmod 600 /root/tyrion.creds 
+
+#vim /etc/fstab
+insert: --> //server7.example.com/westeros        /mnt/westeros        cifs        creds=/root/tyrion.creds        0        0
+
+# mount -a
+
+# cat /mnt/westeros/README.txt 
+slap
+SLAP
+SLAP!
+
+-->Exportar mediante NFSv4 + kerberos.
+# mkdir -p /mnt/essos
+
+# wget -O /etc/krb5.keytab http://classroom.example.com/pub/keytabs/desktop7.keytab
+
+#vim /etc/fstab
+insert: --> server7.example.com:/essos        /mnt/essos        nfs        sec=krb5p,rw        0        0
+
+# systemctl enable nfs-secure.service
+ln -s '/usr/lib/systemd/system/nfs-secure.service' '/etc/systemd/system/nfs.target.wants/nfs-secure.service'
+
+# systemctl start nfs-secure.service
+
+-->Configuraciones de discos. "fdisk"  + "lvm"
+-->Crear un disco nuevo XFS.
+# fdisk -l /dev/vdb 
+
+Disk /dev/vdb: 10.7 GB, 10737418240 bytes, 20971520 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+
+# fdisk /dev/vdb
+n
+p
+:
++2G
+t
+8e
+w
+
+# pvcreate /dev/vdb1               -->Crear un physycal volume.
+
+# vgcreate stark /dev/vdb1         -->Crear un VolumeGroup.
+
+# lvcreate -n arya -L 512M stark   -->Crear un Logical Volume.
+
+# mkfs.xfs /dev/stark/arya         -->Formatear el disco en XFS.
+
+#vim /etc/fstab
+insert: -->UUID=3b509046-bia4-4876b-943a-68e0cc75bfd2        /mnt/underfoot         xfs         defaults        1        2
+           /dev/stark/arya
+
+-->Crear una particion SWAP.
+#fdisk /dev/vdb
+n
+p
+:
++512M
+:
+t
+82
+w
+
+#mkswap /dev/vdb2               --> formatear swap
+
+#blkid                          --> Para tener el UUID
+
+#vim /etc/fstab
+insert: -->UUID=3b509046-bae4-404b-943a-68e0ce45bfd2        swap        swap        defaults        0        0
+
+#swapon /dev/vdb2
+
+-->Crear varios usuarios dentro de un grupo concreto
+
+# groupadd kings
+
+# for NEWUSER in stannis joffrey renly robb; do useradd -G kings ${NEWUSER}; done
+
+# mkdir -m 0700 /ironthrone
+
+# setfacl -m g:kings:rwx /ironthrone
+# setfacl -m u:joffrey:r-x /ironthrone
+
+--> Añadir el servico Apache
+#yum install httpd -y
+
+#systemctl start httpd.service
+
+#systemctl enable httpd.service
+
+#firewall-cmd --permanent --add-port=12345/tcp
+
+#firewall-cmd --reload
+
+-->Trabajar con Selinux.
+
+#mkdir /docroot
+
+#semanage fcontext -a -t public_content_t '/docroot(/.*)?'
+
+#restorecon -RvF /docroot/
+
+-->REGEX
+
+# wget http://server7.example.com/logfile
+
+#grep -e 'ERROR$' -e 'FAIL$' logfile > /home/student/errors.txt
+
+#mkdir /run/veryveryvolatile
+
+vim /etc/tmpfiles.d/veryveryvolatile.conf
+insert: -->  d /run/veryveryvolatile         1777        root        root        5s
+
+#######################################################################
+
+RED HAT System Administration III
+
+1.Control de servizos e daemons
+
+2.Xestión de redes IPv6
+
+La red la marca la mascara.
+En la red local no se habla en ip. Se trabaja con mac. Los switches hablan con mac.
+
+Gateway--> Es el que nos indica ana ruta que no conocemos, o nos manda a otra red a la que no pertenece mi rango de red.
+           Todas las maquinas tienen que tener un default gateway.
+
+DSN  --> Es el que se encarga de resolver los nombres. Traduce los nombres a direcciones.
+
+Dispositivo --> Ethernet. Un dispositivo solo puede tener una conexion a la vez funcionando.
+
+Conexion --> Coleccion de parametros de red, que se le define a una interfaz(dispositivo).Segun lo que queramos hacer, acudimos a una configuracion. 
+
+NetworkManager --> Es el que se encarga de cargar conexiones, a dispositivos. Utilizamos el comando "nmcli".
+
+$ nmcli device show       --> Para ver Dispositivos.
+
+$ nmcli connection show   -->Para ver conexiones. Podemos ver las conexiones especificas.
+
+method.auto = dhcp automatico.
+method.manual= statico.
+
+nmcli con up  "device"    --> levanta una conexion
+nmcli con down  "device"  --> bajamos la conexion.
+
+La forma ordenada de hacer, es bajar antes de subir las conexiones con anticipacion.
+
+nmcli con add   ---> añadimos una conexion, necesitamos cargar: el nombre, la interfaz, el tipo de conexion, la ip,el gw ...
+ 
+$sudo  nmcli connection add con-name eth0 ifname eth0 type ethernet ip4 192.168.0.10/24 gw4 192.168.0.1/24
+
+$sudo nmcli mod ipv4.dns 8.8.8.8  --> modificamos la conexion para añadir el dns.
+
+$ vim /etc/sysconfig/network-scripts/ifcfg-enp2s0   --> se almacenan las conexiones de red.
+
+DEVICE=eth0
+BOOTPROTO=none
+
+UUID=aeeee99d-6a0f-401a-ac69-c95383b2998c
+BRIDGE=br0
+ONBOOT=yes
+TYPE=Ethernet
+NAME="System eth0"
+
+Network manager carga esta informacion en memoria, si modificamos el fichero, necistamos recargar la configuracion para que la reinterprete. 
+Al hacerlo con nmcli, le decimos al demonio que vamos a cambiar sus ficheros.
+
+## nmcli connection reload /etc/sysconfig/network-scripts/ifcfg-eth0   --> si no le indicamos el fichero, los leera todos.
+
+Secuencia :     -con show
+                -con add.
+                -con con mod.
+                -con reload.
+
+Ficehros de configuracion.   
+
+/etc/sysconfig/network-scripts/ifcfg-*
+
+/etc/resolv.conf     --> El network manager lo machaca.
+
+$ cat /etc/resolv.conf 
+# Generated by NetworkManager
+search ilt.example.com example.com
+nameserver 172.25.254.250
+
+/etc/hostname  --> Es un nombre local que no tiene mayor inmportancia. Que se incluye en el datagrama para tener un orden. 
+$ cat /etc/hostname 
+foundation7.ilt.example.com
+
+
+$ hostnamectl        --> vemos informacion de la maquina y tambien del nombre.
+
+   Static hostname: foundation7.ilt.example.com
+         Icon name: computer-desktop
+           Chassis: desktop
+        Machine ID: aad09becf4d94ed9af86e85ca8b28fff
+           Boot ID: d136bdc2615c446b88c72f93613e4f6c
+  Operating System: Red Hat Enterprise Linux Server 7.2 (Maipo)
+       CPE OS Name: cpe:/o:redhat:enterprise_linux:7.2:GA:server
+            Kernel: Linux 3.10.0-327.el7.x86_64
+      Architecture: x86-64
+
+#hostnamectl set-hostname myhostname
+
+Podemos tener la relacion nombre ip en /etc/hosts... Mejor tener configurado un servidor dns. 
+
+
+--> Conceptos IPV6
+IPV6 surgio porque se quedaron cortas las ips de ipv4. Con ipv4 tenemos 32 bits (). 
+Con ipv6 128 bits. 
+
+En ipv6 tenemos 32 numeros hexadecimales, nibbles(1 hexadecimal) 4 bits, 32 * 4 = 128 bits total. 
+Con numeros tan largos se aplican unas reglas para poder reducir el tamaño de lo que se escribe.
+
+ipv6    -->   8 bloques
+        -->   32 hexadecimales
+        -->  4 bits cada bloque hexadecimal
+        --> total 128 bits
+        nibble --> 8 bits
+        bloque --> 2 nibbles --> 16 bits.
+
+ "0001": Se reducen los ceros seguidos. --> Varios ceros seguidos se quitan. :1:
+
+Cuando tenemos varios ceros seguidos de izquierda  a derecha. "0000:0000:0001"·   ::1
+
+:::1   -->  0000:0000:0000:0001
+
+En las reducciones solo podemos hacer una agrupacion grande de ceros. Siempre se grupan de izquierda a derecha. 
+Solo se hace una agrupacion.
+
+En ipv6 tambien tenemos algunas ips reservadas.
+Localhost  --> ::1
+Direccion no especificada  --> ::   =  0.0.0.0
+
+Ips reservadas. Los 6 primeros nibbles, estan designados para las ISP. A partir del 6 nibble, se ofrecen esas ip a los clientes IPs publicas. A partir del aqui podemos empezar a definir las ips de los dispositivos.
+
+Link-local adress.
+
+Dhcp asigna una ip estatica con respecto a tu direccion mac. Hay un calculo a partir de los datos de la maquina fisica.
+
+Comando ip. Vemos valores en memoria de las configuraciones. Cargamos configuraciones en memoria. Nmcli no muestra cosas en caliente. 
+
+--> Configuración IPV6
+
+Despues de copnfigurar validamos la configuración.
+ip a        ->ver la direccion
+ip r        -> ver las rutas
+ping 8.8.8.8   //  ping a nuestro dns  //  ping al gateway
+ping6
+traceroute6  --  
+mtr =  a network diagnostic tool
+tracepath6  -->
+dig   --> preguntar a los dns.
+
+3.Configuración e agregación de teaming e bridging
+#TEAMING#
+Teaming --> Agrupar dos interfaces de red, para que la red tenga otras caracteristicas.
+En cada dispositivo creamos una conexion de tipo slave(dispositivo), y estas trabajan a un team. El team sera una conexion master. 
+Y necesita una configuracion propia. El team, tendra todos los datos configuraciones necesarias para la red.
+Los esclavos solo proporciuonan las direcciones mac. 
+
+Tipos de Team:
+--> maquinas con alta disponibilidad. Poner 2 ips y un servicio referenciado a la misma maquina a traves de cada ip.
+--> para hacer un balanceo de carga, segun este mejor la red (load balance). Mas eficiente que round robin.  
+--> Round Robin. Cada vez por una interfaz.
+--> Link agregattion con el que podemos sumar el ancho de banda. 1 Gb + 10/100  =  1100 mb/s (lacp) 
+--> tambien podemos seleccionar con que interfaz vamos siempre por defecto, y dejamos otra como backup. (Activo backup) 
+--> agregacion (broadcast) para aumentar el ancho de banda para streaming.
+
+La agregacion tambien depende del fabricante. Por que se necesita acceder a ciertas funcionalidades del hardware. Los modos de runner, depende de que tu hardware lo soporte.
+
+Las conexiones teaming , son objetos abstractos, asi que podemos realizar mezclas de runners.
+
+Dentro del teaming el Runner es el tipo de agregacion que se va a utilizar. 
+
+Para hacer un team, tendremos 2 slaves (team-slave) --> van a dispositivos reales  y un master(team) --> van a dispositivos virtuales.
+
+ifname --> puede hacer referencias a interfaces reales o creadas. En los slaves apunta a interfaces fisicas(eth0-eth1-eth2), en el master a seran interfaces virtuales (team0-team1-team2...)
+
+El master tiene toda la configuracion de red, tambien la configuracion del comportamiento del team, la config de ip, gw, dns. 
+El slave tendra la interfaz, el nombre del master(team). 
+
+# nmcli connection add type team con-name equipo0 ifname team0 config '{"runner":{"name":"activebackup"}}'
+
+# nmcli connection add type team-slave con-name esclavo1 ifname eth0 master equipo0
+
+# nmcli connection modify equipo0 ipv4.dns 8.8.8.8 ipv4.addresses 192.168.0.10/24 ipv4.gateway 192.168.0.1/24
+
+
+--> el team utiliza la mac addres de los dispositivos conectados, por defecto pillara la mac address mas baja.
+
+teamdctl  --> para ver el estado de la configuracion-.
+
+Los ficheros de configuracion se crean en /etc/sysconfig/network-scripts/ifcfg-{equipo0,esclavo1,esclavo2}
+
+Si modificamos el archivo debemos hacer un reload.
+
+# nmcli con reaload ifcfg-equipo0
+
+# ip a show team0
+# teamdctl equipo0 show
+# teamdctl equipo0
+
+#cd /usr/share/doc/teamd/example_configs/     --> Tiene algunos ejemplos
+
+
+########
+#BRIDGE#
+########
+
+4.Control de seguridade de portos de rede
+
+Netfilter es la parte que se encarga de la parte del firewall.
+Iptables era el software para crear reglas de firewall.
+
+Firewalld --> es el que nos permite monitorizar y crear reglas en netfilter.
+
+Firewalld separa el trafico entrante y siguiendo unas directrices lo pasa a unas zonas determinadas. 
+Las zonas son una consecucion de reglas. Cada zona tendra sus reglas predeterminadas.
+
+1.-usar zonas predefinidas.
+2.-asociar una interfaz lo/eth*/wlan* a una zona
+3.-ajustar las reglas de la zona
+
+Un datagrama entra, si filtra por src (ip) va a una zona, si filtra por puerto(eth/wlan) va a otra zona, 
+si no encuentra ninguna categoria pasa a una zona por default.
+
+Las reglas se definen en las zonas. Algunas zonas por defecto permiten todo el trafico de salida. 
+Las zonas predefinidas son:
+-trusted   -->por ejemplo todo lo que venga por localhost.
+-home      -->permite algunos servicios, ssh, mdns, ipp-client...
+-internal  -->parecida a home, permite dhcpv6-client.
+-external  -->el trafico saliente lo enmascara.
+-work      -->dhcpv6-client ipp-client ssh
+-dmz       -->ssh
+-public (default, active)
+-block     -->blokea todo y avisa.
+-drop      -->blokea y no avisa.
+
+Todas las zonas tienen una politica por defecto.
+
+Los archivos de configuracion estan en :
+# ls /etc/firewalld/
+firewalld.conf  icmptypes  lockdown-whitelist.xml  services  zones
+
+Para gestionar el firewall usamos el comando "firewall-cmd"
+
+#firewall-cmd -h    -->obtenemos la ayuda.
+
+# firewall-cmd --get-default-zone   //  --set-default-zone
+public
+
+# firewall-cmd --get-active-zones   
+public
+  interfaces: eth0
+
+# firewall-cmd --get-zones
+block dmz drop external home internal public trusted work
+
+# firewall-cmd --get-services   //
+amanda-client bacula bacula-client dhcp dhcpv6 dhcpv6-client dns ftp high-availability http https imaps ipp ipp-client 
+ipsec kerberos kpasswd ldap ldaps libvirt libvirt-tls mdns mountd ms-wbt mysql nfs ntp openvpn pmcd pmproxy pmwebapi 
+pmwebapis pop3s postgresql proxy-dhcp radius rpc-bind samba samba-client smtp ssh telnet tftp tftp-client transmission-client 
+vnc-server wbem-https
+
+# firewall-cmd --list-all
+public (default, active)
+  interfaces: eth0
+  sources: 
+  services: dhcpv6-client ssh
+  ports: 
+  masquerade: no
+  forward-ports: 
+  icmp-blocks: 
+  rich rules: 
+
+
+Añadir un source a nuestra zon interna.
+
+# firewall-cmd --zone=internal --add-source=172.25.7.10/24
+
+# firewall-cmd --zone=internal --add-source=172.25.7.10/24 --permanent 
+
+# firewall-cmd --zone=internal --list-all 
+internal
+  interfaces: 
+  sources: 172.25.7.10/24 172.25.7.10
+  services: dhcpv6-client ipp-client mdns samba-client ssh
+  ports: 
+  masquerade: no
+  forward-ports: 
+  icmp-blocks: 
+  rich rules: 
+
+# cat /etc/firewalld/zones/internal.xml
+
+<?xml version="1.0" encoding="utf-8"?>
+<zone>
+  <short>Internal</short>
+  <description>For use on internal networks. You mostly trust the other computers on the networks to not harm your computer. Only selected incoming connections are accepted.</description>
+  <source address="172.25.7.10"/>
+  <source address="172.25.7.10/24"/>
+  <service name="ipp-client"/>
+  <service name="mdns"/>
+  <service name="dhcpv6-client"/>
+  <service name="samba-client"/>
+  <service name="ssh"/>
+</zone>
+
+##############
+# RICH RULES #
+##############
+
+Regla  --> es un criterio establecido, la combinacion entre algo que busco y una accion que vamos a realizar si lo encuentra.
+Cadena --> es una lista de reglas.
+Tabla  --> conjunto de cadenas.
+
+Las rich rules, son un valor intermedio entre las direct rules, y las zonerules.  Vamos a enriquecer las reglas por default 
+de las zonas.
+Se pueden usar para añadir , crear, o denegar reglas. Dentro de una zona especifica, crearemos unas reglas mas potentes que 
+las de zonas y servicios permitidos.
+
+Lo evaluamos de la siguiente manera.
+
+ZONA           --NAT
+        --LOG
+        --ALLOW
+        --DENY
+
+La sintaxis de una rich rule, es mas compleja, ip de origen, ip de destino, si hace nat, si escribe un log en audit, 
+si hace drop, block o allow. Sepueden definir acciones tal como (nat, masquerade, drop, log, ) 
+Las rich rules se le asignaran a una zona.
+
+-->Logging wich rich rules. Con las rich rules podemos establecer reglas de firewall y como queda escrito un log de los accesos.
+Para generar el, log hay que poner determinadas caracteristricas de que tipo de logs va a generar.
+
+Audit es un log propio del kernel. No es necesario ser tan especifico. genera los logs en /var/log/audit
+
+#####
+#NAT#
+#####
+Hay dos tipos de nat, cunado se cambia la ip de origen y cunado se cambia la ip de destino. 
+Se cambia el destino para los paquetes que entran, o se cambian el origen para los paquetes que salen.
+
+Masquerade: todos los paquetes cogeran la ip de la ethernet, da igual con la ip que entren. Le decimos a una zona masquerade. 
+Cambias la direccion de origen. Es lo que hacen los routrers cuando salimos a internet.
+
+# firewall-cmd --permanent --zone=internal --add-masquerade
+        
+Tambien se puede hacer un masquerade con rich-rules.
+
+# firewall-cmd --permanent --zone=internal --add-rich-rule='rule family=ipv4 source address=172.16.20.0/24 masquerade'
+
+###################
+# PORT-FORWARDING #
+################### 
+Cambio de la ip de destino. Solo funciona con rich rules. Cambiamos ips y puertos de destino. No es obligatorio indicar el protocolo. 
+Por lo menos hay que indicar o ip o puerto.
+
+# firewall-cmd --permanent --zone=external --add-forward-port=port=3128:proto=tcp:toport=80
+
+Si queremos tener mayyor control usamos una Rich Rule.
+
+# firewall-cmd --permanent --zone=external \
+--add-rich-rule='rule family=ipv4 source address=192.168.1.0/24 forward-port port=3128 protocol=tcp to-port=80'
+
+###########
+# SELINUX #
+###########
+Cuando cambiamos los puertos predefinidos por el sistema, deberemos indicarle a selinux,
+que puertos se van a usar y para que servicios.
+
+--> Para listar puertos concretos ya predefinidos.
+
+#semanage port -l | grep http
+http_cache_port_t              tcp      8080, 8118, 8123, 10001-10010
+http_cache_port_t              udp      3130
+http_port_t                    tcp      80, 81, 443, 488, 8008, 8009, 8443, 9000
+pegasus_http_port_t            tcp      5988
+pegasus_https_port_t           tcp      5989
+
+--> Para asignar un puerto a un servicio.
+
+#semanage port -a -t port_label -p tcp|udp PORTNUMBER
+
+Si cambiamos el puerto por defecto de ssh (22) a otro personalizado (2222) deberemos aplicar esta directiva.
+
+# semanage port -a- t ssh_port_t -p tcp 2222
+
+# semanage port -l | grep ssh
+ssh_port_t                     tcp      2222, 22
+
+Podemos actualizar la informacion de SELINUX. Y actualizar los manuales de la siguiente manera.
+#yum install selinux-policy-devel -y
+#mandb
+
+#man -k _selinux
+
+5.Xestión de DNS para servidores
+
+6.Configuración de entrega de correo
+
+7.Almacenamento baseado en blocks
+
+8.Almacenamento baseado en ficheiros
+
+9.Configuración de bases de datos MariaDB
+Maria db es un fork de mysql, surge porque no se sabe cual es la actitud de oracle con respecto a mysql.
+En RHEL7 tenemos mariadb   y postgresql.
+
+En una base de datos tenemos tablas(contenido global), atributos(informacion) y registros(objetos).
+
+Una entidad puede ser dividida en varias tablas.
+
+--> Instalacion de MariaDB.
+
+# yum group install mariadb mariadb-client -y
+
+--> Abrimos los puertos en el firewall si la base de datos tiene que tener acceso por red. 
+Sino es mas seguro que sea localhost el que interactua con la base de datos.
+ 
+# firewall-cmd --add-service=mysql
+#firewall-cmd --add-service=mysql --permanent
+
+--> Iniciamos el servicio 
+#systemctl start mariadb.service
+
+#systemctl enable mariadb.service
+
+--> Ejecutamos un script para mejorar la seguridad de mariadb, pondremos password de root, no permitinmos el acceso a anonymous users,
+    quitamos las bases de datos de ejemplos...
+
+# mysql_secure_installation
+
+--> Si no damos acceso por ip, necesitamos darle acceso a localhost, o acceso por socket.
+# vim /etc/my.cnf
+
+bind_address=localhost    -->puede contener hostname, ipv4, ipv6
+
+skip-networking= 0|1      -->si seteamos 1, solo se escucha clientes locales.
+
+--> CREAR BASES DE DATOS <--
+Bases de datops  -->> Tablas -->> Registros
+
+Cuando hablamos de bases de daytos estructuradas ....
+C -CREATE-crear      --> INSERT
+R -READ-leer         --> SELECT . Leemos caracteristicas de los registros.
+U -UPDATE-actualizar --> Actualizamos los registros.
+D -DELETE-borrar     --> hay que ser muy especificos a la hora de borrar.
+
+Con una clave primaria podemos encontrar tablas e interrelacionarlas.
+Tipos de atributros son:
+        -int
+        -autoincrement
+        -...
+
+# mysql -u root -p  --> accedemos a la base de datos como root.
+
+MariaDB [(none)]> SHOW DATABASES;
+MariaDB [(none)]> USE mysql;
+Database changed
+MariaDB [mysql]> 
+MariaDB [mysql]> SHOW tables;   --> imprime las tablas.
+MariaDB [mysql]> DESCRIBE servers;  --> nos enseña los atributos de los registros.
+
+INSERT INTO tabla(1,2,3,4,5)valores(1,2,3,4,5)
+
+SELECT * FROM product WHERE name = patata;
+
+--> CREAR USUARIOS <--
+--> Un usuario se define como el 'nombre'@'direccion'.  Podemos tener varios usuarios dentro de la misma maquina.
+
+CREATE USER 'usuario7'@'localhost' IDENTIFIED BY 'redhat7';
+CREATE USER 'usuario7'@'172.25.11.7' IDENTIFIED BY 'redhat';
+
+GRANT PRIVILEGES, nospermite definir que tipo de permisos tienen los usuarios de las bases de datos;
+
+GRANT SELECT on productos to usuario7@172.25.7.11;                           -->tenemos pocos permisos de sde fuera.
+GRANT SELECT , INSERT, UPDATE, DELETE on productos to usuario7@localhost;    --> como usuario local tenemos mas privilegios.
+
+--> Con revoke eliminamos privilegios.
+
+REVOKE SELECT, INSERT; UPDATE, DELETE, on inventory to usuario7@localhost;
+
+FLUSH PRIVILEGES;  --> carga todas las reglas modificadas.
+
+
+--> Tambien tenemos una herramienta que nos permite crear usuarios y bases de datos de maera interactiva.
+# mysql_setpermission
+
+--> BACKUP DATABASES <--
+
+Con herramientas de mysql, podremos hacerlos en caliente. No hace falta parar la base de datos.
+Haciendo un backup generamos un fichero en texto plano.
+
+Con LVM. hacemos bakcup por hardware. 
+
+Mysqldump hace un volcado en pantalla de todo lo que le pedimos---- 
+-u usuario 
+-p password 
+--all-databases(backupea todo)
+   
+con ">" lo planchamos a un ficehro.
+mysqldump -u usuario_db -p pass_db database > $backup_sql.sql
+
+Para recuperar la base de datos cambiamos el menor que "<". 
+
+mysqldump -u usuario_db -p pass_db database < $backup_sql.sql
+
+10.Servizos web Apache HTTPD
+
+11.Creación de Scripts Bash
+
+12.Condicionais e estruturas de control en Bash
+
+13.Configurar a contorna de shell
+
+14.Introdución a Linux containers
+
+15.Resumo final
+
