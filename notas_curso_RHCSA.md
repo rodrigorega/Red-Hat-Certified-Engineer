@@ -21,7 +21,7 @@
     1. Ir a Apps->System tools->Settings->Region and language
     * Añadir input souce: spanish
         * En la barra de tareas de Gnome, seleccionar spanish.
-        
+
 * Mostrar todos los idiomas disponibles:
 > $ locale --all
 
@@ -44,19 +44,19 @@
 
 * Conexión SSH con claves:
     1. Crear par de claves (genera una privada y una pública):
-    
+
         > $ ssh-keygen
-        
+
     * Solicitará introducir una frase de paso para la clave privada. Por seguridad se debería establecer en todo caso.
-  
+
             * Las claves generadas quedan almacenadas en: _$HOME/.ssh/id_rsa/_:
                 * Archivo _id_rsa_ contiene la clave privada.
                 * Archivo _id_rsa.pub_ contiene la clave pública. Esta clave se puede hacer pública sin problema, al contrario que la privada, la cual no debe de salir de nuestro equipo.
-                
+
         * Copiar la clave pública al servidor al que queremos conectar. Desde dicho servidor, ejecutar:
         > ssh-copy-id student@desktop0
-            
-            * Con esto se añadiría el _id_rsa.pub_ anterior a una línea de _$HOME/.ssh/authorized_keys_ del servidor al que queremos conectar. 
+
+            * Con esto se añadiría el _id_rsa.pub_ anterior a una línea de _$HOME/.ssh/authorized_keys_ del servidor al que queremos conectar.
 
 ### Extensión laboratorio conexión SSH con llaves
 
@@ -105,7 +105,7 @@ Gerarquía de archivos en Linux:
         /etc -> configuraciones en modo texto.
         /home -> raíz de de los usuarios.
         /lib -> bibliotecas de funciones.
-        /media -> puntos de montaje creados automáticamente por Gnome o Kde. 
+        /media -> puntos de montaje creados automáticamente por Gnome o Kde.
         /mnt -> punto de montajes creados manualmente.
         /opt -> instalaciones de grandes aplicaciones (oracle, sap...).
         /proc -> directorio virtual. Generado por el kernel en tiempo real.
@@ -123,7 +123,7 @@ Gerarquía de archivos en Linux:
 
 * Se  pueden mover o copiar varios ficheros a la vez:
 > $ mv fichero1 fichero2 fichero3 /directorio/
-        
+
 * Crear directorio junto con su ruta completa:
 > mkdir -p /dir1/dir2/dir3/
 
@@ -148,11 +148,11 @@ Existen dos tipos de enlaces, simbólicos y duros:
 
 ### Enlaces simbólicos
 En inglés **Simbolic link**. Se consigue con el siguiente comando:
-> $ ln -s original simbolico 
+> $ ln -s original simbolico
 
 Características reseñables de los enlaces simbólicos:
 
-* Cuando se hace _ls_, los enlaces están marcados con una "l" al inicio de la parte de permisos: "lrxwrxwrxw". 
+* Cuando se hace _ls_, los enlaces están marcados con una "l" al inicio de la parte de permisos: "lrxwrxwrxw".
 * Los permisos efectivos son los del archivo original. Aunque también es posible establecer permisos en el simbólico.
 * Si se borra "original", "simbolico" quedaría huérfano, por lo que al intentar acceder a él daría error. Sí se puede acceder normalmente a "duro". Si se volviera a crear "original", el enlace simbólico "blando" volvería a apuntar a "original", o sea, apunta directamente a nombres de archivo.
 * No es buena práctica usar rutas relativas al hacer enlaces simbólicos, ya que si lo mueves el archivo al que se enlaza se perdería el camino.
@@ -164,7 +164,7 @@ En inglés **Hard link**. Se realiza del siguiente modo:
 Características reseñables de los enlaces duros:
 
 * Aquí no se ve nada al hacer un _ls_ al lado de los permisos. Pero sí hay un "2" en la segunda columna, justo a la derecha de los permisos. Dicho número se corresponde con el número de enlaces duros que apuntan al archivo.
-* Tanto el "duro" es enlace de "original", como "original" es enlace de "duro". 
+* Tanto el "duro" es enlace de "original", como "original" es enlace de "duro".
 * En cuanto a metadatos, si se lee el original, se actualizará por ejemplo  también el mtime del enlace duro, ya que los metadataos están físicamente al final del contenido del archivo.
 * Si se borra "original", "duro" **no** quedaría huérfano, por lo que se podría acceder a él.
 
@@ -194,7 +194,7 @@ Características reseñables de los enlaces duros:
 
 * Un usuario siempre debe tener un grupo primario.
 * Red Hat no añade al grupo _users_ los usuarios recién creados, (lo cual se supone que es el estándar). en su lugar, crea un grupo igual que el nombre de usuario, el cual pasa a ser su grupo primario.
-        
+
 * Los grupos se encuentran en _/etc/group"_. Cada entrada de grupo contiene los siguientes campos:
         1. Nombre del grupo.
         * Password de grupo: Puede haber un password de grupo. Ref: d
@@ -217,15 +217,15 @@ Es posible acceder como super-usuario desde otro usuario logueado de dos formas:
         * Cada entrada (línea) en _sudoers_ tiene el siguiente formato:
 
             > USUARIO ORIGEN=USER_AL_QUE_PUEDE_CAMBIAR COMANDO_CON_PARÁMETROS
-            
+
             * Tiene mayor preferencia la última línea, de manera secuencial. Se evalúa el fichero entero.
-            
+
                         * Ejemplo 1 (se permite ejecutar fdisk):
-                        
+
                             > fernando 192.168.1.145=(root) "/usr/sbin/fdisk /dev/sdb"
-                            
+
                         * Ejemplo 2 (se permita ejecutar pass con todo, expto con root):
-                        
+
                                 > student ALL=(ALL) "/usr/bin/passwd *, !/usr/bin/passwd root"
 
 ## Administrar usuarios locales (1.51)
@@ -247,7 +247,7 @@ Es posible acceder como super-usuario desde otro usuario logueado de dos formas:
         * Se ejecuta desde: "Applications->Sundry->Users and Gropus" (Sundry en castellano está traducido como "varios").
         * Por defecto solo muestra usuarios a partir del uid 1000. Esto se puede cambiar en "Edit->presferences->Hide system users and groups".
         * Los cambios que se hagan en esta herramienta son inmediatos.
-                
+
 * Existen dos binarios en CLI para gestionar usuarios:
     * useradd: Es el la herramienta nativa incluida en el sistema.
     * adduser: Es un script escrito en perl que usa useradd como back-end. Adduser es mś amigable e interactivo. No hay diferencias de funcionalidad entre ambos.
@@ -271,7 +271,7 @@ Es posible acceder como super-usuario desde otro usuario logueado de dos formas:
 ## Servicios gestión identidad (1.65)
 * Proveen autenticación y autorización.
 * IPA (Identity, Policy, and Audit):
-    * Fue discontinuado por Red Hat, siguió su desarrollo como freeIPA. A posterior volvió IPA a Red Hat bajo el nombre de  _Red Hat Identity Management_ (IdM)[1]. 
+    * Fue discontinuado por Red Hat, siguió su desarrollo como freeIPA. A posterior volvió IPA a Red Hat bajo el nombre de  _Red Hat Identity Management_ (IdM)[1].
 
 * Herramientas para configuración de gestión de identidad:
     * Herramienta cli: _authconfig_.
@@ -337,7 +337,7 @@ Es posible acceder como super-usuario desde otro usuario logueado de dos formas:
         * x <- Permiso de paso a en directorio y ejecución en archivo.
         * . <- Existe contexto de SELinux.
 
-## Modificación de permisos de archivos  
+## Modificación de permisos de archivos
 
 * Modificación de permisos de un archivo/directorio:
 > $ chmod ug+rwx archivo1
@@ -396,9 +396,9 @@ Estos permisos especiales se pueden aplicar a:
 
 * ficheros:    (--s)(--s)(---) (a un fichero se le podría poner o+s pero no haría nada)
 * directorios: (---)(--s)(--t) (a un fichero se le podría poner u+s pero no haría nada)
- 
+
 ### Establecimiento de los permisos especiales
- 
+
 * Se establecen con _chmod_. Por ej:
 
 > \# chmod u+s archivo1
@@ -509,9 +509,9 @@ Al hacer _getfacl_ aparecería un "#effective:***" al lado de cada entrada, en d
 
 * **Permisos default**: Si se establece en directorios, los permisos se heredan. Cuando se genera contenido dentro de ellos este tienen las mismas ACLs que el directorio.
 
-Asignar permisos por defecto: 
+Asignar permisos por defecto:
 
-> $ setfacl -m d:u:student:7 directorio/ 
+> $ setfacl -m d:u:student:7 directorio/
 
   > * El carácter "d" que precede a "u" es la que indica que es un permiso default. Tras esto, al hacer _getfacl_ al directorio, aparecen entradas "default".
 
@@ -546,7 +546,7 @@ Asignar permisos por defecto:
 * El contexto SElinux de archivos se puede ver con "ll -Z".
 
 * El contexto SElinux de procesos se ve con "ps -Z".
-                
+
 * Para restaurar un conexto de un fichero: "restorecon -v archivo"
 
 * SELinux añade metadatos propios a cada archivo.
@@ -557,7 +557,7 @@ Asignar permisos por defecto:
     * Rol/papel: admin. apache, samba, etc. Siempre acaba en "_r".
     * Tipo de recurso: Todos los recursos están etiquetados. De modo que algo que tenga una etiqueta, podrá acceder a todo lo que tenga esa misma etiqueta. Un recurso solo puede tener una etiqueta, pero a una etiqueta pueden acceder varios recursos. Esto siempre acaba en "_t".
     * No se utiliza. Es para un modo de funcionamiento de SELinux que RH no soporta.
-    
+
 * SELinux por defecto no deja seguir enlaces simbólicos, pero se puede habilitar.
 
 * "SELinux Alert Browser" es la utilidad para entorno gráfico que muestra alertas de SELinux vía popup.
@@ -581,27 +581,27 @@ Para cambiar de _enforcing_ o _permissive_ a _disable_ hay que reiniciar.
 * Mostrar estado de SELinux en el sistema:
 > $ getenforce
 
-* Cambiar estado en caliente: 
+* Cambiar estado en caliente:
 > $ setenforce 1|0
 
 
 ### Modificación de contextos SELinux
 
 * Añadir una regla "customizada" para conseguir por ejemplo que _/srv/miweb/_ sea etiquetado como Apache para que sea válido como directorio de archivos web:
-> \# semanage fcontext -a -t "httpd_sys_content_t" '/srv/miweb/(/.*)?' 
+> \# semanage fcontext -a -t "httpd_sys_content_t" '/srv/miweb/(/.*)?'
 
     > * Se usa la expresión regular para hacerlo recursivo.
 
     * A continuación habría que aplicarlo:
 
     > \# restorecon -RFv /srv/"
-    
+
 * Añadir puerto a la etiqueta de apache para que pueda acceder apache a dicho puerto:
 > \# semanage port -a -t http_port_t -p tcp 666
 
 * Copiar etiqueta a _/srv/samba_ desde la que ya tiene establecida _/var/run/samba_:
 > \# semanage fcontext -a -e /var/run/samba /srv/samba
-                
+
 * Mostrar las reglas "customizadas". Por defecto en el sistema hay más de 5.000 reglas pre-establecidas.
 > $ semanage fcontext -lC
 
@@ -615,7 +615,7 @@ Permiten hacer activar o desactivar funcionalidades. Por ejemplo:
 
 * Listar booleanos:
 > $ semanage boolean -l
-    
+
     > Muestra: etiqueta (estado_actual, estado_al_inicio_de_la_maquina) descripción.
 
 * Listar booleanos customizados:
@@ -636,7 +636,7 @@ Permiten hacer activar o desactivar funcionalidades. Por ejemplo:
 ### Troubleshooting SELinux (1.129)
 
 * El paquete **setroubleshoot-server** monitoriza el _audit.log_ y cuando encuentra una línea tipo _AVC_, la manda a _/var/log/messages_. Para ver esta información:
- 
+
     * En modo gráfico: _policycoreutils-gui_ es una utilidad que muestra un _popup_ cuando hay una alerta de SELinux, mostrando información y posibles soluciones.
         * En Gnome aparecerá en "Applications->System Tools->SELinux Administration".
 
@@ -653,7 +653,7 @@ Por defecto no se instala la ayuda completa de SELinux (etiquetas, booleanos, ej
 
 * Buscar páginas de manual de selinux:
 > $ apropos selinux
-    
+
     > Muestra solo una página, aunque en realidad existen ~800.
 
 * Instalar documentación de SELinux:
@@ -711,11 +711,11 @@ Por defecto no se instala la ayuda completa de SELinux (etiquetas, booleanos, ej
 > $ cat /proc/loadavg
 
     > 0.87 0.78 0.86 3/875 31889
-    
+
     * Valor 1: carga último minuto
     * Valor 2: carga últimos 5 minutos
     * Valor 3: carga últimos 15 minutos
-    
+
     * No es un número absoluto, depende del número de _CPUs_ que tengamos. Una carga de 4 con 4 _CPUs_ es lo mismo que una carga de 1 con una _CPU_. Para determinar la carga media de CPU, dividir el _load average_ por el número de CPUs.
 
 * Monitorización de procesos en tiempo real:
@@ -730,7 +730,7 @@ Por defecto no se instala la ayuda completa de SELinux (etiquetas, booleanos, ej
         * Interrupciones de hardware.
         * Interrupciones de software.
         * Stolen: CPU robada por un hipervisor para gestionar máquinas virtuales
-        
+
 * Obtener información sobre la arquitectura de la CPU:
 > $ lscpu
     * CPUs_lógicas=threads_per_core*cores_per_socket
@@ -744,7 +744,7 @@ Por defecto no se instala la ayuda completa de SELinux (etiquetas, booleanos, ej
 * El sistema de prioridades va de 0 a 139
     * 0 = más prioridad
     * 139 = menos prioridad
-    
+
 * Por defecto todo se lanza con prioridad 120.
 
 * El usuario no tiene acceso a modificar estas prioridades, si no que se hace a través de **nice**.
@@ -831,7 +831,7 @@ Existen dos formatos en los que la información se guarda en disco:
 
     * Mostrar la tabla de particiones:
     > fdisk> **p**
-    
+
     * Crear nueva partición:
     > fdisk> **n**
 
@@ -842,7 +842,7 @@ Existen dos formatos en los que la información se guarda en disco:
 
     * Guardar cambios:
     > fdisk> **w**
-    
+
 * Forzar al kernel para que relea la tabla de particiones:
 > \# partprobe
     * En caso de que hiciésemos el particionado con alguna partición del disco ya montada, al guardar cambios en _fdisk_ se mostrará un "warning" que solicita reiniciar o ejecutar _partprobe_
@@ -901,7 +901,7 @@ Existen dos formatos en los que la información se guarda en disco:
 
 * _systemctl_ tiene gestión de dependencias automática.
 
-### Gestión de servicios con systemd 
+### Gestión de servicios con systemd
 
 #### Unidades systemd
 
@@ -1003,7 +1003,7 @@ Un _target_ de _systemd_ es un conjunto de unidades que deben ser activadas para
     * multiuser: Equivalente a _runlevel 3_, o sea, igual que gráfico, pero solo texto.
     * rescue.target: Equivalente a _runlevel 1_ (single user), aunque ahora, ahora pide password.
     * emergency.target: Es como el _runlevel 1_ pero ejecuta menos cosas todavía, se accede como _root_, pide password también.
-    
+
 * Archivos de configuración de los _targets_ se encuentran en _/usr/lib/systemd/system/_
 	* Por ej: _/usr/lib/systemd/system/graphical.target_
 
@@ -1089,7 +1089,7 @@ Proceso de establecimiento de password de root:
 * Obtendremos una consola como _root_ (todo archivo que se edite perderá el contexto de SELinux).
 
 * Re-montar /sysroot como lectura y escritura:
-> \# mount -oremoount,rw /sysroot
+> \# mount -oremount,rw /sysroot
 
 * Cambiar el raíz a _/sysroot_;
 > \# chroot /sysroot
@@ -1149,13 +1149,13 @@ Reparar problema de _fstab_ modificando _grub_:
 
 * Las entradas de inicio están dentro de los bloques _menuentry_. En estos bloques, las líneas _linux16_ y _initrd16_ apuntan al kernel que se carga desde el disco y al _initramfs_ que se cargará.
 
-* Las líneas _set root_ no apuntan al sistema de archivos raíz, en su lugar apuntan al sistema de archivos desde el que _grub2_ debe leer los archivos _kernel_ y _initramfs_. 
+* Las líneas _set root_ no apuntan al sistema de archivos raíz, en su lugar apuntan al sistema de archivos desde el que _grub2_ debe leer los archivos _kernel_ y _initramfs_.
 
 * _grub2-mkconfig_ genera la configuración a raíz de _/etc/default/grub_ y _/etc/grub.d/_. Para hacer persistentes los cambios que se realicen en ellos:
 > \# grub2-mkconfig > /boot/grub2/grub.cfg
 
 * En caso de que _grub_ se corrompiese, puede ser reinstalado:
-> \# grub2-install 
+> \# grub2-install
     * Si no se le pasan argumentos, será instalado en _/boot/efi_, en caso de usar _EFI_. Si se usa _MBR_ habría que pasarle como argumento el disco donde _grub2_ se instalará en su _MBR_.
 
 <center>2016-04-12 (martes)</center>
@@ -1342,7 +1342,7 @@ Reparar problema de _fstab_ modificando _grub_:
 * Los archivos de configuración de red están en:
 
 > /etc/sysconfig/network-scripts/ifcfg-*
-	
+
 * No hacer "cp ifcfg-eth0 ifcfg-eth0.copia" en el dir "network-scripts" ya que _NetworkManager_ lo trataría como si fuese una nueva interfaz. Se podría hacer si el archivo no empieza por _ifcfg*_.
 
 * Tras editar este archivo habría que recargar la configuración en _NetworkManager_:
@@ -1376,7 +1376,7 @@ Reparar problema de _fstab_ modificando _grub_:
     5. notice: Evento normal pero significante.
     6. info: Notificación estándar.
     7. debug: Mensajes de depuración.
-    
+
 ### rsyslog
 
 * Obtener estado del servicio _rsyslog_:
@@ -1403,21 +1403,21 @@ Reparar problema de _fstab_ modificando _grub_:
 * Sección de reglas:
 
     * En ella se especifica en dónde se guardarán los logs.
- 
+
 	* _.*_ son todos los niveles de log excepto el _debug_.
-	
+
 	* Todo _info_ o superior excepto servicio _mail_ van a _messages_:
 		* *.info;mail.none; /var/log/messages
 
 	* Escritura asíncrona, el "-" antes de la ruta:
 		* mail.* /var/log/cron -/var/log/maillog
-	
+
 	* Mandar logs de _info_ o superior a otro servidor vía _udp_:
 		* *.info	@server4.example.com
 
 	* Mandar logs de _info_ o superior a otro servidor vía _tcp_:
 		* *.info	@@server4.example.com
-	
+
 	* Mandar todos los logs _info_ excepto los de _mail_ y _cron_:
 	   * *.info;mail.none;cron.none    /var/log/messages
 
@@ -1444,7 +1444,7 @@ Reparar problema de _fstab_ modificando _grub_:
 
 ### journalctl (1.297)
 
-* Documentación en: 
+* Documentación en:
 
 > $ man systemd-journald
 
@@ -1503,7 +1503,7 @@ Reparar problema de _fstab_ modificando _grub_:
     * _NTP_ tiene dos limitaciones. _systemd_ las gestiona mejor ya que las automatiza:
     	* No sincroniza la hora en el momento, lo va haciendo en saltos pequeños. Para evitar saltos discontinuos. O sea para evitar saltos de tiempo ilógicos.
     	* Tiene un tope: No sincroniza si la diferencia es mayor de 20 minutos.
-    
+
 * Archivo configuración de _chronyd_ en _/etc/chrony.conf_.
 
 * Documentación:
@@ -1524,7 +1524,7 @@ Reparar problema de _fstab_ modificando _grub_:
     * CEST = Central European Summer time (+2 horas en España).
     * DST= Displacement Summer Time.
     * RTC = Real time clock (reloj de hardware).
-    
+
 
 ### Comando timedatectl (1.304)
 
@@ -1604,7 +1604,7 @@ A continuación se detalla todo el proceso de implementación de un almacenamien
     * t -> 1 -> 8e
     * t -> 2 -> 8e
     * w
-    
+
 * Forzar al _kernel_ a releer la tabla de particiones del disco:
 > \# partprobe /dev/vdb
 
@@ -1612,7 +1612,7 @@ A continuación se detalla todo el proceso de implementación de un almacenamien
 > \# lsbk
 
 	>> vdb1
-	
+
 	>> vdb2
 
 #### Crear phisical volumes
@@ -1629,7 +1629,7 @@ A continuación se detalla todo el proceso de implementación de un almacenamien
 > \# pvs
 
 	>> /dev/vdb1
-	
+
 	>> /dev/vdb2
 
 * Obtener información detallada de los _pvs_;
@@ -1639,7 +1639,7 @@ A continuación se detalla todo el proceso de implementación de un almacenamien
 
 * Listar _vgs_ existentes:
 > \# vgs
-	
+
 	>> -nada-
 
 * Crear _volume group_ (_vg_) con uno de los _pvs_ ("-s" es tamaño de _extent_, si se omite, el propio _LVM_ lo autogestiona):
@@ -1693,7 +1693,7 @@ A continuación se detalla todo el proceso de implementación de un almacenamien
 * Es posible referirse al _lv_ de dos formas:
 	* _/dev/vg_mivgroup/lv_datos_
 	* _/dev/mapper/vg_mivgroup-lv_datos_ (el kernel usa internamente esto)
-		
+
 	* Ambas enlazan a "/dem-0" (device mapper 0). Al hacer reboot esto puede cambiar, puede pasar a ser "dem-1" por ejemplo.
 
 * Crear sistema de archivos en el _lv_;
@@ -1732,7 +1732,7 @@ A continuación se detalla todo el proceso de implementación de un almacenamien
 ## Extender el sistema de ficheros sobre LVM
 
 > \# lvextend/lvresize: lvextend -L +500M -r /dev/vg_mivgroup/lv_datos
-	
+
 * _-r_ -> Hace _resize_ del sistema de ficheros automáticamente (compatible con xfs, ext3 y ext4).
 
 ## Snapshots LVM
@@ -1834,7 +1834,7 @@ A continuación se detalla todo el proceso de implementación de un almacenamien
     	* usuario.
     	* grupo.
     	* "-" (que no elimine temporales).
-    
+
 # Capítulo 14: Sistemas de archivos de red (1.353)
 
 ## NFS (1.354)
@@ -1955,15 +1955,15 @@ A continuación se detalla todo el proceso de implementación de un almacenamien
 > \# firewall-config
 
     * Hay zonas (perfiles) predefinidas, es posible generar nuevas zonas.
-    
+
     * Hay dos tipos de configuración:
     	* Runtime: No es persistente.
     	* Permanent: Es persistente.
-    
+
     * _Rich rules_: Añadir reglas complejas.
-    
+
     * _Sources_: Aplicar reglas dependiendo del origen.
-    
+
 * Herramienta de línea de comandos para configurar reglas de _firewalld_:
 > \# firewall-cmd
 
